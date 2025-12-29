@@ -1,0 +1,5 @@
+{
+    "GST_RATE": 0.18,
+    "VOLUMETRIC_DIVISOR": 5000,
+    "DEFAULT_WEIGHT_SLAB": 0.5
+}
