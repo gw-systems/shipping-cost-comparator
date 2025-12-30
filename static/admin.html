@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogiRate Admin - Manage Carriers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full">
+            <h2 class="text-2xl font-bold mb-4 text-center">Admin Login</h2>
+            <input type="password" id="adminToken" placeholder="Enter Admin Password" class="w-full border p-2 rounded mb-4">
+            <button onclick="checkLogin()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Enter Dashboard</button>
+        </div>
+    </div>
+
+    <nav class="bg-blue-700 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">LogiRate Control Center</h1>
+            <button onclick="logout()" class="text-sm bg-blue-800 px-3 py-1 rounded hover:bg-blue-900">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div class="bg-white rounded-lg shadow-md p-6 overflow-x-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-semibold text-gray-700">Carrier Rate Management</h2>
+                <div class="space-x-2">
+                    <button onclick="fetchRates()" class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Refresh</button>
+                    <button onclick="saveRates()" class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 shadow">Save All Changes</button>
+                </div>
+            </div>
+
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="p-3">Carrier</th>
+                        <th class="p-3">Mode</th>
+                        <th class="p-3">Active</th>
+                        <th class="p-3">Zone A</th>
+                        <th class="p-3">Zone B</th>
+                        <th class="p-3">Zone C</th>
+                        <th class="p-3">Zone D</th>
+                        <th class="p-3">Zone E (E/F)</th>
+                    </tr>
+                </thead>
+                <tbody id="rateTable">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentRates = [];
+
+        function checkLogin() {
+            const token = document.getElementById('adminToken').value;
+            if(token) {
+                sessionStorage.setItem('admin_token', token);
+                document.getElementById('loginModal').classList.add('hidden');
+                fetchRates();
+            }
+        }
+
+        async function fetchRates() {
+            const token = sessionStorage.getItem('admin_token');
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/admin/rates', {
+                    headers: { 'X-Admin-Token': token }
+                });
+                if(!response.ok) throw new Error("Unauthorized");
+                currentRates = await response.json();
+                renderTable();
+            } catch (err) {
+                alert("Login failed or Session Expired");
+                logout();
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('rateTable');
+            tbody.innerHTML = currentRates.map((c, i) => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3 font-medium">${c.carrier_name}</td>
+                    <td class="p-3 text-sm text-gray-500">${c.mode}</td>
+                    <td class="p-3">
+                        <input type="checkbox" ${c.active ? 'checked' : ''} onchange="updateValue(${i}, 'active', this.checked)">
+                    </td>
+                    <td class="p-3"><input type="number" step="0.1" class="w-16 border rounded p-1" value="${c.forward_rates.z_a}" onchange="updateRate(${i}, 'z_a', this.value)"></td>
+                    <td class="p-3"><input type="number" step="0.1" class="w-16 border rounded p-1" value="${c.forward_rates.z_b}" onchange="updateRate(${i}, 'z_b', this.value)"></td>
+                    <td class="p-3"><input type="number" step="0.1" class="w-16 border rounded p-1" value="${c.forward_rates.z_c}" onchange="updateRate(${i}, 'z_c', this.value)"></td>
+                    <td class="p-3"><input type="number" step="0.1" class="w-16 border rounded p-1" value="${c.forward_rates.z_d}" onchange="updateRate(${i}, 'z_d', this.value)"></td>
+                    <td class="p-3"><input type="number" step="0.1" class="w-16 border rounded p-1" value="${c.forward_rates.z_f}" onchange="updateRate(${i}, 'z_f', this.value)"></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateValue(index, key, val) { currentRates[index][key] = val; }
+        function updateRate(index, zone, val) { currentRates[index].forward_rates[zone] = parseFloat(val); }
+
+        async function saveRates() {
+            const token = sessionStorage.getItem('admin_token');
+            const response = await fetch('http://127.0.0.1:8000/api/admin/rates/update', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Admin-Token': token 
+                },
+                body: JSON.stringify(currentRates)
+            });
+            if(response.ok) alert("Rates saved successfully!");
+            else alert("Error saving rates.");
+        }
+
+        function logout() {
+            sessionStorage.removeItem('admin_token');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
