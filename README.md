@@ -1,8 +1,6 @@
-# Shipping Cost Comparator (LogiRate API) 🚚
+# LogiRate API - Django Edition 🚚
 
-A high-performance, production-ready logistics engine built with **FastAPI**. It automates shipping cost comparisons across multiple carriers by resolving Indian 6-digit pincodes into specific shipping zones (A-E) using a localized Pincode Master database.
-
-
+A high-performance, production-ready logistics engine built with **Django** and **Django REST Framework**. This application automates shipping cost comparisons across multiple carriers by resolving Indian 6-digit pincodes into specific shipping zones (A-E) using a localized Pincode Master database.
 
 ## 🌟 Core Features
 
@@ -18,58 +16,131 @@ A high-performance, production-ready logistics engine built with **FastAPI**. It
     - Additional weight increments.
     - **COD Logic**: "Higher of" fixed fee vs. percentage of order value.
     - **Taxation**: Integrated 18% GST (configurable).
-- **Industry Grade Performance**: Implements $O(1)$ dictionary-based lookups for microsecond response times.
-
-
+- **Industry Grade Performance**: Implements O(1) dictionary-based lookups for microsecond response times.
+- **Order Management**: Full CRUD operations for logistics order tracking.
+- **Admin Analytics**: Advanced reporting with revenue, profit margins, and carrier performance metrics.
 
 ## 🛠️ Tech Stack
 
-- **Backend**: FastAPI (Python 3.10+)
-- **Data Validation**: Pydantic V2 (Strict Type Checking)
+- **Backend**: Django 5.2.8 + Django REST Framework 3.16
+- **API Documentation**: drf-spectacular (OpenAPI/Swagger)
+- **Data Validation**: DRF Serializers (migrated from Pydantic V2)
 - **Data Processing**: Pandas (Initial CSV indexing)
 - **Frontend**: Tailwind CSS & Vanilla JS (Fetch API)
 - **Configuration**: JSON-driven settings for easy updates to GST and Metro lists.
+- **Security**: Custom X-Admin-Token authentication, CORS headers, strong password validation
 
 ## 📁 Project Structure
 
 ```text
-shipping-cost-comparator/
-├── app/
-│   ├── main.py            # API Routes & CORS Config
-│   ├── engine.py          # Calculation Logic (GST, COD, Slabs)
-│   ├── zones.py           # Pincode & Zone Resolution Logic
-│   ├── schemas.py         # Pydantic V2 Models & Validators
-│   ├── config/            # JSON Configuration Files
+Courier_Module/
+├── config/                      # Django project settings
+│   ├── settings.py              # Main configuration
+│   ├── urls.py                  # Root URL routing
+│   ├── wsgi.py                  # WSGI application
+│   └── asgi.py                  # ASGI application
+├── courier/                     # Main Django app
+│   ├── models.py                # Django ORM models
+│   ├── serializers.py           # DRF serializers
+│   ├── views.py                 # API views and viewsets
+│   ├── urls.py                  # App URL routing
+│   ├── permissions.py           # Custom permissions
+│   ├── authentication.py        # Admin token auth
+│   ├── admin.py                 # Django admin configuration
+│   ├── engine.py                # Calculation logic (GST, COD, Slabs)
+│   ├── zones.py                 # Pincode & Zone Resolution Logic
+│   ├── config/                  # JSON Configuration Files
 │   │   ├── settings.json
 │   │   ├── metro_cities.json
 │   │   └── special_states.json
-│   └── data/              # Reference Data
-│       └── pincode_master.csv
-├── static/
-│   └── index.html         # Frontend Form
-└── rate_cards.json        # Carrier Rates Database
+│   └── data/                    # Reference Data
+│       ├── pincode_master.csv
+│       └── rate_cards.json      # Carrier Rates Database
+├── static/                      # Static files (dashboard, CSS, JS)
+├── manage.py                    # Django management script
+├── requirements_django.txt      # Python dependencies
+├── logistics.db                 # SQLite database
+└── .env                         # Environment variables
+```
 
-Getting Started
-1. Clone the repository
-git clone 
-cd shipping-cost-comparator
+## 🚀 Getting Started
 
-2. Install Dependencies
-pip install fastapi uvicorn pandas pydantic
+### 1. Install Dependencies
 
-3. Run the Server
-uvicorn app.main:app --reload
+```bash
+pip install -r requirements_django.txt
+```
 
-4. Access the App
-UI: Open static/index.html in your browser.
+### 2. Configure Environment Variables
 
-API Docs: Navigate to http://127.0.0.1:8000/docs (Swagger UI).
+Create or update `.env` file:
 
-📊 API Usage Example
-Request: POST /compare-rates
+```env
+# REQUIRED: Strong admin password (12+ chars, mixed complexity)
+ADMIN_PASSWORD=YourSecurePassword123!
 
-JSON
+# Optional Django settings
+DJANGO_SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=*
+```
 
+### 3. Run Database Migrations
+
+```bash
+python manage.py migrate
+```
+
+### 4. Create Django Superuser (Optional)
+
+```bash
+python manage.py createsuperuser
+```
+
+### 5. Run the Development Server
+
+```bash
+python manage.py runserver 8001
+```
+
+### 6. Access the Application
+
+- **Dashboard**: http://localhost:8001/static/dashboard.html
+- **API Documentation (Swagger)**: http://localhost:8001/docs/
+- **API Documentation (ReDoc)**: http://localhost:8001/redoc/
+- **Django Admin**: http://localhost:8001/django-admin/
+- **Health Check**: http://localhost:8001/api/health
+
+## 📊 API Endpoints
+
+### Public Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| POST | `/api/compare-rates` | Compare carrier rates |
+| GET | `/api/pincode/{pincode}/` | Lookup pincode details |
+| POST | `/api/orders/` | Create new order |
+| GET | `/api/orders/` | List all orders |
+| GET | `/api/orders/{id}/` | Get order details |
+| PUT | `/api/orders/{id}/` | Update order |
+| DELETE | `/api/orders/{id}/` | Delete order (draft only) |
+| POST | `/api/orders/compare-carriers/` | Compare rates for orders |
+| POST | `/api/orders/book-carrier/` | Book carrier for orders |
+
+### Admin Endpoints (Requires X-Admin-Token Header)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/rates` | Get all carrier rates |
+| POST | `/api/admin/rates/update` | Update carrier rates |
+| POST | `/api/admin/rates/add` | Add new carrier |
+
+## 📝 API Usage Example
+
+### Request: POST `/api/compare-rates`
+
+```json
 {
   "source_pincode": 400001,
   "dest_pincode": 110001,
@@ -78,13 +149,136 @@ JSON
   "order_value": 1500,
   "mode": "Both"
 }
-Response Breakdown: The system automatically identifies Mumbai and Delhi as Metros, resolves to Zone C, calculates the 0.5kg base + 0.5kg additional unit, applies the higher COD fee, and adds 18% GST.
+```
 
-⚙️ Configuration
-You can update carrier rates in rate_cards.json or modify the Metro city list in app/config/metro_cities.json without touching the core Python logic. This ensures the system is easily maintainable as courier contracts change.
+### Response
 
-Developed with ❤️ for Logistics Efficiency.
+```json
+[
+  {
+    "carrier": "Ekart Surface",
+    "total_cost": 108.75,
+    "breakdown": {
+      "base_forward": 29.96,
+      "additional_weight": 18.19,
+      "cod": 31.99,
+      "escalation": 12.02,
+      "gst": 16.59,
+      "applied_gst_rate": "18%",
+      "applied_escalation_rate": "15%"
+    },
+    "applied_zone": "Zone A (Metropolitan)",
+    "mode": "Surface"
+  }
+]
+```
+
+## 🔒 Security Features
+
+1. **Strong Password Validation**: Enforces 12+ character passwords with complexity requirements
+2. **Admin Token Authentication**: Custom `X-Admin-Token` header for admin endpoints
+3. **CORS Protection**: Configurable CORS headers
+4. **Rate Limiting**: 30 requests/minute on public endpoints
+5. **SQL Injection Protection**: Django ORM parameterized queries
+6. **Input Validation**: Comprehensive DRF serializer validation
+
+## ⚙️ Configuration
+
+### Update Carrier Rates
+
+Edit `courier/data/rate_cards.json` or use the admin API endpoint.
+
+### Update Metro Cities
+
+Edit `courier/config/metro_cities.json` without touching core Python logic.
+
+### Update System Settings
+
+Edit `courier/config/settings.json` to change:
+- GST Rate
+- Escalation Rate (Profit Margin)
+- Default Weight Slab
+
+## 🏗️ Production Deployment
+
+### Using Gunicorn
+
+```bash
+gunicorn config.wsgi:application --bind 0.0.0.0:8001 --workers 4
+```
+
+### Using Docker (Example)
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements_django.txt .
+RUN pip install -r requirements_django.txt
+COPY . .
+RUN python manage.py collectstatic --noinput
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8001"]
+```
+
+### Environment Variables for Production
+
+```env
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+DJANGO_SECRET_KEY=your-very-secret-key-here
+ADMIN_PASSWORD=YourProductionPassword123!
+```
+
+## 🧪 Testing
+
+```bash
+# Run tests
+pytest
+
+# Run with coverage
+pytest --cov=courier
+
+# Run Django tests
+python manage.py test courier
+```
+
+## 📚 Django Admin Interface
+
+Access the powerful Django admin at `/django-admin/` to:
+- Manage orders with advanced filtering
+- Search by order number, recipient, contact
+- View order status and shipment details
+- Filter by carrier, status, date ranges
+- Only delete DRAFT orders (safety feature)
+
+## 🔄 Migration from FastAPI
+
+This project was successfully migrated from FastAPI to Django while maintaining:
+- ✅ All business logic (engine.py, zones.py)
+- ✅ Existing database compatibility
+- ✅ API endpoint structure
+- ✅ Admin authentication system
+- ✅ Static dashboard files
+- ✅ Configuration files
+
+## 🤝 Integration with Existing Systems
+
+This Django implementation is designed to integrate seamlessly with existing Django-based systems:
+
+- **Shared User Authentication**: Can use Django's built-in auth system
+- **Unified Admin Interface**: Integrates into existing Django admin
+- **Database Integration**: Can share database with other Django apps
+- **Middleware Compatibility**: Works with existing Django middleware
+- **ORM Benefits**: Use Django QuerySets for complex queries across apps
+
+## 📞 Support
+
+For issues or questions, please check:
+- API Documentation at `/docs/`
+- Django Admin interface for data management
+- Application logs at `app.log`
+
 ---
 
-### Pro Tip for your GitHub:
-I've added a section for **Project Structure**. This is very important because it shows anyone looking at your code that you know how to organize a professional Python application.
+**Developed with ❤️ for Logistics Efficiency**
+
+Migrated to Django for enterprise integration and scalability.

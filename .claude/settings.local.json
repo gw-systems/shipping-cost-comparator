@@ -21,7 +21,10 @@
       "Bash(Select-Object Id,ProcessName,StartTime)",
       "Bash(Format-Table:*)",
       "Bash(netstat:*)",
-      "Bash(timeout /t 3)"
+      "Bash(timeout /t 3)",
+      "Bash(if exist \"main.py\" echo main.py exists)",
+      "Bash(xargs kill:*)",
+      "Bash(tree:*)"
     ]
   }
 }

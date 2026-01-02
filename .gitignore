@@ -10,12 +10,31 @@ env/
 venv/
 ENV/
 
+# Django
+*.log
+db.sqlite3
+logistics.db-journal
+staticfiles/
+media/
+.coverage
+htmlcov/
+
 # Data/Temp
 .DS_Store
-*.log
 *.bak
 *.test_backup
 duplicate_pincodes_report.csv
+nul
 
 # Test cache
 .pytest_cache/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archive
+archive_fastapi/
