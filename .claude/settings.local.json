@@ -24,7 +24,9 @@
       "Bash(timeout /t 3)",
       "Bash(if exist \"main.py\" echo main.py exists)",
       "Bash(xargs kill:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(mkdir:*)",
+      "Bash(del test_permissions.py)"
     ]
   }
 }

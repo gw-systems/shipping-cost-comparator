@@ -220,14 +220,41 @@ class OrderViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    def destroy(self, request, *args, **kwargs):
-        """Delete an order (only if DRAFT)"""
+    def update(self, request, *args, **kwargs):
+        """Update an order - only allowed for DRAFT orders"""
         order = self.get_object()
 
+        # Only DRAFT orders can be edited
         if order.status != OrderStatus.DRAFT:
             return Response(
-                {"detail": "Can only delete orders in DRAFT status"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "You can only edit orders in DRAFT status"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        """Partial update an order - only allowed for DRAFT orders"""
+        order = self.get_object()
+
+        # Only DRAFT orders can be edited
+        if order.status != OrderStatus.DRAFT:
+            return Response(
+                {"detail": "You can only edit orders in DRAFT status"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """Delete an order - only allowed for DRAFT orders"""
+        order = self.get_object()
+
+        # Only DRAFT orders can be deleted
+        if order.status != OrderStatus.DRAFT:
+            return Response(
+                {"detail": "You can only delete orders in DRAFT status"},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         order.delete()
@@ -388,6 +415,48 @@ class OrderViewSet(viewsets.ModelViewSet):
             "mode": data['mode']
         })
 
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel_order(self, request, pk=None):
+        """
+        Cancel a booking.
+        Only BOOKED orders can be cancelled (not IN_TRANSIT or later).
+        """
+        order = self.get_object()
+
+        # Cannot cancel orders that are IN_TRANSIT or later
+        if order.status in [OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED]:
+            return Response(
+                {"detail": f"Cannot cancel order in {order.status} status. Orders in transit or delivered cannot be cancelled."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Can only cancel BOOKED orders
+        if order.status != OrderStatus.BOOKED:
+            return Response(
+                {"detail": f"Can only cancel orders in BOOKED status. Current status: {order.status}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Prevent cancelling already cancelled orders
+        if order.status == OrderStatus.CANCELLED:
+            return Response(
+                {"detail": "Order is already cancelled"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Cancel the order
+        previous_status = order.status
+        order.status = OrderStatus.CANCELLED
+        order.save()
+
+        return Response({
+            "status": "success",
+            "message": f"Order {order.order_number} cancelled successfully",
+            "order_number": order.order_number,
+            "previous_status": previous_status,
+            "current_status": order.status
+        })
+
 
 # ============================================================================
 # ADMIN ENDPOINTS
@@ -466,5 +535,151 @@ def add_carrier(request):
         logger.error(f"ADMIN_ERROR: Failed to add carrier: {str(e)}")
         return Response(
             {"detail": f"Failed to add carrier: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['PUT'])
+@permission_classes([IsAdminToken])
+def toggle_carrier_active(request, carrier_name):
+    """Toggle carrier active/inactive status"""
+    active = request.data.get('active')
+
+    if active is None:
+        return Response(
+            {"detail": "Missing 'active' parameter"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        # Load existing rates
+        carriers = load_rates()
+
+        # Find and update the carrier
+        carrier_found = False
+        for carrier in carriers:
+            if carrier.get("carrier_name") == carrier_name:
+                carrier["active"] = active
+                carrier_found = True
+                break
+
+        if not carrier_found:
+            return Response(
+                {"detail": f"Carrier '{carrier_name}' not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Backup and save
+        if os.path.exists(RATE_CARD_PATH):
+            shutil.copy(RATE_CARD_PATH, RATE_CARD_PATH + ".bak")
+
+        with open(RATE_CARD_PATH, "w") as f:
+            json.dump(carriers, f, indent=4)
+
+        logger.info(f"ADMIN_ACTION: Carrier '{carrier_name}' {'activated' if active else 'deactivated'}")
+        return Response({
+            "status": "success",
+            "message": f"Carrier '{carrier_name}' {'activated' if active else 'deactivated'}",
+            "carrier_name": carrier_name,
+            "active": active
+        })
+
+    except Exception as e:
+        logger.error(f"ADMIN_ERROR: Failed to toggle carrier status: {str(e)}")
+        return Response(
+            {"detail": f"Failed to toggle carrier status: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminToken])
+def delete_carrier(request, carrier_name):
+    """Delete a carrier from rate cards"""
+    try:
+        # Load existing rates
+        carriers = load_rates()
+
+        # Filter out the carrier
+        initial_count = len(carriers)
+        carriers = [c for c in carriers if c.get("carrier_name") != carrier_name]
+
+        if len(carriers) == initial_count:
+            return Response(
+                {"detail": f"Carrier '{carrier_name}' not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Backup and save
+        if os.path.exists(RATE_CARD_PATH):
+            shutil.copy(RATE_CARD_PATH, RATE_CARD_PATH + ".bak")
+
+        with open(RATE_CARD_PATH, "w") as f:
+            json.dump(carriers, f, indent=4)
+
+        logger.info(f"ADMIN_ACTION: Carrier '{carrier_name}' deleted")
+        return Response({
+            "status": "success",
+            "message": f"Carrier '{carrier_name}' deleted successfully",
+            "remaining_carriers": len(carriers)
+        })
+
+    except Exception as e:
+        logger.error(f"ADMIN_ERROR: Failed to delete carrier: {str(e)}")
+        return Response(
+            {"detail": f"Failed to delete carrier: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAdminToken])
+def update_carrier(request, carrier_name):
+    """Update carrier details"""
+    try:
+        # Load existing rates
+        carriers = load_rates()
+
+        # Find the carrier
+        carrier_found = False
+        carrier_index = None
+        for i, carrier in enumerate(carriers):
+            if carrier.get("carrier_name") == carrier_name:
+                carrier_found = True
+                carrier_index = i
+                break
+
+        if not carrier_found:
+            return Response(
+                {"detail": f"Carrier '{carrier_name}' not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Validate the update data with serializer (partial update)
+        serializer = NewCarrierSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        update_data = serializer.validated_data
+
+        # Update the carrier
+        carriers[carrier_index].update(update_data)
+
+        # Backup and save
+        if os.path.exists(RATE_CARD_PATH):
+            shutil.copy(RATE_CARD_PATH, RATE_CARD_PATH + ".bak")
+
+        with open(RATE_CARD_PATH, "w") as f:
+            json.dump(carriers, f, indent=4)
+
+        logger.info(f"ADMIN_ACTION: Carrier '{carrier_name}' updated")
+        return Response({
+            "status": "success",
+            "message": f"Carrier '{carrier_name}' updated successfully",
+            "carrier": carriers[carrier_index]
+        })
+
+    except Exception as e:
+        logger.error(f"ADMIN_ERROR: Failed to update carrier: {str(e)}")
+        return Response(
+            {"detail": f"Failed to update carrier: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

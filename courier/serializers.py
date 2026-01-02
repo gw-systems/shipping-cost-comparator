@@ -132,6 +132,30 @@ class OrderSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('Invalid email format')
         return value
 
+    def validate_weight(self, value):
+        """Validate that weight is positive"""
+        if value <= 0:
+            raise serializers.ValidationError('Weight must be greater than 0')
+        return value
+
+    def validate_length(self, value):
+        """Validate that length is positive"""
+        if value <= 0:
+            raise serializers.ValidationError('Length must be greater than 0')
+        return value
+
+    def validate_width(self, value):
+        """Validate that width is positive"""
+        if value <= 0:
+            raise serializers.ValidationError('Width must be greater than 0')
+        return value
+
+    def validate_height(self, value):
+        """Validate that height is positive"""
+        if value <= 0:
+            raise serializers.ValidationError('Height must be greater than 0')
+        return value
+
     def validate(self, data):
         # Validate pincodes
         for field in ['recipient_pincode', 'sender_pincode']:

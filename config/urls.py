@@ -20,7 +20,7 @@ urlpatterns = [
     path("", RedirectView.as_view(url='/static/dashboard.html', permanent=False)),
 
     # API endpoints
-    path("api/", include('courier.urls')),
+    path("api/", include(('courier.urls', 'courier'), namespace='courier')),
 
     # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name='schema'),

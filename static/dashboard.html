@@ -48,15 +48,14 @@
                 <span class="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Shipments</span>
             </button>
 
-            <!-- Admin Panel Link (Bottom) -->
+            <!-- Rate Calculator Link (Bottom) -->
             <div class="flex-grow"></div>
-            <a href="/static/admin_panel.html" class="group relative flex items-center justify-center w-12 h-12 rounded-lg bg-orange-500 hover:bg-orange-600 transition-colors">
+            <button onclick="showSection('dashboard')" class="group relative flex items-center justify-center w-12 h-12 rounded-lg bg-green-500 hover:bg-green-600 transition-colors">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                 </svg>
-                <span class="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Admin Panel</span>
-            </a>
+                <span class="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Rate Calculator</span>
+            </button>
         </aside>
 
         <!-- Main Content Area -->
@@ -107,12 +106,20 @@
 
                 <!-- Orders Section -->
                 <div id="section-orders" class="content-section hidden">
-                    <div class="mb-6">
+                    <div class="mb-6 flex items-center justify-between">
                         <div class="flex space-x-2 bg-slate-100 rounded-lg p-1 inline-flex">
                             <button onclick="filterOrders('all')" class="order-filter-btn px-4 py-2 text-sm font-medium rounded-md bg-white text-brand-blue shadow-sm" data-filter="all">All Orders</button>
                             <button onclick="filterOrders('draft')" class="order-filter-btn px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800" data-filter="draft">Draft</button>
                             <button onclick="filterOrders('pending')" class="order-filter-btn px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800" data-filter="pending">Pending</button>
                             <button onclick="filterOrders('booked')" class="order-filter-btn px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800" data-filter="booked">Booked</button>
+                        </div>
+
+                        <!-- Action Buttons (shown when orders selected) -->
+                        <div id="order-actions" class="hidden space-x-2">
+                            <span id="selected-count" class="text-sm text-slate-600 mr-2"></span>
+                            <button onclick="editSelectedOrder()" id="edit-btn" class="hidden px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">Edit</button>
+                            <button onclick="cancelSelectedOrders()" id="cancel-btn" class="hidden px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors">Cancel Booking</button>
+                            <button onclick="deleteSelectedOrders()" id="delete-btn" class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Delete</button>
                         </div>
                     </div>
 
@@ -177,11 +184,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Name *</label>
-                            <input type="text" name="recipient_name" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validateName(this)" oninput="clearError(this)">
+                            <input type="text" name="recipient_name" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validateName(this)" oninput="clearError(this); this.value = this.value.replace(/[^a-zA-Z\s.-]/g, '')">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Contact Number *</label>
-                            <input type="tel" name="recipient_contact" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validateContact(this)" oninput="clearError(this)" maxlength="10">
+                            <input type="tel" name="recipient_contact" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validateContact(this)" oninput="clearError(this); this.value = this.value.replace(/\D/g, '')" maxlength="10">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-slate-700 mb-1">Address *</label>
@@ -216,7 +223,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Sender Name</label>
-                            <input type="text" name="sender_name" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validateName(this)" oninput="clearError(this)">
+                            <input type="text" name="sender_name" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validateName(this)" oninput="clearError(this); this.value = this.value.replace(/[^a-zA-Z\s.-]/g, '')">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-slate-700 mb-1">Sender Address</label>
@@ -224,7 +231,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Sender Phone</label>
-                            <input type="tel" name="sender_phone" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validatePhone(this)" oninput="clearError(this)" maxlength="10">
+                            <input type="tel" name="sender_phone" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent" onblur="validatePhone(this)" oninput="clearError(this); this.value = this.value.replace(/\D/g, '')" maxlength="10">
                         </div>
                     </div>
                 </div>
@@ -337,7 +344,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/api/orders/pincode/${pincode}`);
+                const response = await fetch(`${API_BASE}/api/pincode/${pincode}/`);
                 if (response.ok) {
                     const data = await response.json();
                     document.getElementById(`${type}_city`).value = data.city;
@@ -530,7 +537,17 @@
 
         function hideCreateOrderModal() {
             document.getElementById('createOrderModal').classList.add('hidden');
-            document.getElementById('createOrderForm').reset();
+
+            const form = document.getElementById('createOrderForm');
+            form.reset();
+
+            // Clear edit mode
+            delete form.dataset.editId;
+            document.getElementById('modal-title').textContent = 'Create New Order';
+            document.getElementById('submit-order-btn').textContent = 'Create Order';
+
+            // Hide COD details
+            document.getElementById('cod-details').classList.add('hidden');
         }
 
         // Create Order
@@ -612,14 +629,27 @@
             });
 
             try {
-                const response = await fetch(`${API_BASE}/api/orders/`, {
-                    method: 'POST',
+                // Check if we're editing an existing order
+                const editId = e.target.dataset.editId;
+                const isEdit = editId !== undefined && editId !== '';
+
+                const url = isEdit ? `${API_BASE}/api/orders/${editId}/` : `${API_BASE}/api/orders/`;
+                const method = isEdit ? 'PATCH' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
                 if (response.ok) {
-                    alert('Order created successfully!');
+                    alert(isEdit ? 'Order updated successfully!' : 'Order created successfully!');
+
+                    // Clear edit mode
+                    delete e.target.dataset.editId;
+                    document.getElementById('modal-title').textContent = 'Create New Order';
+                    document.getElementById('submit-order-btn').textContent = 'Create Order';
+
                     hideCreateOrderModal();
                     loadAllOrders();
                     loadDashboard();
@@ -683,32 +713,37 @@
                 const orders = await response.json();
 
                 const ordersHtml = orders.map(order => `
-                    <div class="bg-white border border-slate-200 rounded-lg p-4 hover:border-brand-blue transition-all">
-                        <div class="flex items-start justify-between mb-3">
-                            <span class="text-sm font-medium text-slate-500">${order.order_number}</span>
-                            <span class="text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}">${order.status.toUpperCase()}</span>
+                    <div class="bg-white border border-slate-200 rounded-lg p-4 hover:border-brand-blue transition-all relative">
+                        <div class="absolute top-3 left-3">
+                            <input type="checkbox" value="${order.id}" data-status="${order.status}" class="w-5 h-5 text-brand-blue border-slate-300 rounded focus:ring-brand-blue order-checkbox" onchange="handleOrderSelection()">
                         </div>
-                        <h4 class="font-semibold text-slate-800 mb-2">${order.recipient_name}</h4>
-                        <div class="grid grid-cols-2 gap-2 text-sm mb-3">
-                            <div>
-                                <span class="text-slate-500">Pincode:</span>
-                                <span class="ml-1 font-medium text-slate-700">${order.recipient_pincode}</span>
+                        <div class="pl-8">
+                            <div class="flex items-start justify-between mb-3">
+                                <span class="text-sm font-medium text-slate-500">${order.order_number}</span>
+                                <span class="text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}">${order.status.toUpperCase()}</span>
                             </div>
-                            <div>
-                                <span class="text-slate-500">Weight:</span>
-                                <span class="ml-1 font-medium text-slate-700">${order.applicable_weight || order.weight} kg</span>
+                            <h4 class="font-semibold text-slate-800 mb-2">${order.recipient_name}</h4>
+                            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                                <div>
+                                    <span class="text-slate-500">Pincode:</span>
+                                    <span class="ml-1 font-medium text-slate-700">${order.recipient_pincode}</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Weight:</span>
+                                    <span class="ml-1 font-medium text-slate-700">${order.applicable_weight || order.weight} kg</span>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="text-slate-500">Payment:</span>
+                                    <span class="ml-1 font-medium text-slate-700">${order.payment_mode.toUpperCase()}</span>
+                                </div>
                             </div>
-                            <div class="col-span-2">
-                                <span class="text-slate-500">Payment:</span>
-                                <span class="ml-1 font-medium text-slate-700">${order.payment_mode.toUpperCase()}</span>
-                            </div>
+                            ${order.selected_carrier ? `
+                                <div class="text-sm border-t border-slate-200 pt-2">
+                                    <span class="text-slate-500">Carrier:</span>
+                                    <span class="ml-1 font-medium text-brand-blue">${order.selected_carrier} (₹${order.total_cost})</span>
+                                </div>
+                            ` : ''}
                         </div>
-                        ${order.selected_carrier ? `
-                            <div class="text-sm border-t border-slate-200 pt-2">
-                                <span class="text-slate-500">Carrier:</span>
-                                <span class="ml-1 font-medium text-brand-blue">${order.selected_carrier} (₹${order.total_cost})</span>
-                            </div>
-                        ` : ''}
                     </div>
                 `).join('');
 
@@ -780,10 +815,10 @@
         // Compare Carriers for Shipment
         async function compareCarriersForShipment() {
             try {
-                const response = await fetch(`${API_BASE}/api/orders/compare-carriers`, {
+                const response = await fetch(`${API_BASE}/api/orders/compare-carriers/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(selectedOrdersForShipment)
+                    body: JSON.stringify({ order_ids: selectedOrdersForShipment })
                 });
 
                 const data = await response.json();
@@ -832,7 +867,7 @@
             const {carrier, mode} = JSON.parse(selected.value);
 
             try {
-                const response = await fetch(`${API_BASE}/api/orders/book-carrier`, {
+                const response = await fetch(`${API_BASE}/api/orders/book-carrier/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -854,6 +889,157 @@
                 }
             } catch (error) {
                 alert('Failed to book carrier');
+            }
+        }
+
+        // Order Selection Handling
+        let selectedOrders = [];
+
+        function handleOrderSelection() {
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            selectedOrders = Array.from(checkboxes).map(cb => ({
+                id: parseInt(cb.value),
+                status: cb.dataset.status
+            }));
+
+            const actionsDiv = document.getElementById('order-actions');
+            const selectedCount = document.getElementById('selected-count');
+            const editBtn = document.getElementById('edit-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const deleteBtn = document.getElementById('delete-btn');
+
+            if (selectedOrders.length > 0) {
+                actionsDiv.classList.remove('hidden');
+                selectedCount.textContent = `${selectedOrders.length} selected`;
+
+                // Show Edit only if exactly 1 order selected and it's DRAFT
+                if (selectedOrders.length === 1 && selectedOrders[0].status === 'draft') {
+                    editBtn.classList.remove('hidden');
+                } else {
+                    editBtn.classList.add('hidden');
+                }
+
+                // Show Cancel only if all selected orders are BOOKED
+                const allBooked = selectedOrders.every(o => o.status === 'booked');
+                if (allBooked) {
+                    cancelBtn.classList.remove('hidden');
+                } else {
+                    cancelBtn.classList.add('hidden');
+                }
+
+                // Show Delete only if all selected orders are DRAFT
+                const allDraft = selectedOrders.every(o => o.status === 'draft');
+                if (allDraft) {
+                    deleteBtn.classList.remove('hidden');
+                } else {
+                    deleteBtn.classList.add('hidden');
+                }
+            } else {
+                actionsDiv.classList.add('hidden');
+            }
+        }
+
+        async function editSelectedOrder() {
+            if (selectedOrders.length !== 1) return;
+
+            const orderId = selectedOrders[0].id;
+            try {
+                const response = await fetch(`${API_BASE}/api/orders/${orderId}/`);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(`Error loading order: ${error.detail || 'Unknown error'}`);
+                    return;
+                }
+
+                const order = await response.json();
+
+                const form = document.getElementById('createOrderForm');
+
+                // Populate the edit form with existing data using name selectors
+                form.querySelector('[name="recipient_name"]').value = order.recipient_name || '';
+                form.querySelector('[name="recipient_contact"]').value = order.recipient_contact || '';
+                form.querySelector('[name="recipient_address"]').value = order.recipient_address || '';
+                form.querySelector('[name="recipient_pincode"]').value = order.recipient_pincode || '';
+                form.querySelector('[name="recipient_city"]').value = order.recipient_city || '';
+                form.querySelector('[name="recipient_state"]').value = order.recipient_state || '';
+                form.querySelector('[name="recipient_email"]').value = order.recipient_email || '';
+
+                form.querySelector('[name="sender_pincode"]').value = order.sender_pincode || '';
+                form.querySelector('[name="sender_name"]').value = order.sender_name || '';
+                form.querySelector('[name="sender_address"]').value = order.sender_address || '';
+                form.querySelector('[name="sender_phone"]').value = order.sender_phone || '';
+
+                form.querySelector('[name="weight"]').value = order.weight || '';
+                form.querySelector('[name="length"]').value = order.length || '';
+                form.querySelector('[name="width"]').value = order.width || '';
+                form.querySelector('[name="height"]').value = order.height || '';
+
+                form.querySelector('[name="payment_mode"]').value = order.payment_mode || 'prepaid';
+                form.querySelector('[name="order_value"]').value = order.order_value || '0';
+                form.querySelector('[name="item_type"]').value = order.item_type || '';
+                form.querySelector('[name="sku"]').value = order.sku || '';
+                form.querySelector('[name="quantity"]').value = order.quantity || '1';
+                form.querySelector('[name="item_amount"]').value = order.item_amount || '0';
+                form.querySelector('[name="notes"]').value = order.notes || '';
+
+                // Show COD details if applicable
+                if (order.payment_mode === 'cod') {
+                    document.getElementById('cod-details').classList.remove('hidden');
+                }
+
+                // Calculate and display weights
+                calculateWeights();
+
+                // Store order ID for update
+                form.dataset.editId = orderId;
+                document.getElementById('modal-title').textContent = 'Edit Order';
+                document.getElementById('submit-order-btn').textContent = 'Update Order';
+
+                showCreateOrderModal();
+            } catch (error) {
+                console.error('Edit error:', error);
+                alert('Failed to load order details: ' + error.message);
+            }
+        }
+
+        async function cancelSelectedOrders() {
+            if (!confirm(`Are you sure you want to cancel ${selectedOrders.length} order(s)?`)) return;
+
+            try {
+                const promises = selectedOrders.map(order =>
+                    fetch(`${API_BASE}/api/orders/${order.id}/cancel/`, { method: 'POST' })
+                );
+
+                await Promise.all(promises);
+                alert('Orders cancelled successfully!');
+
+                // Clear selection
+                selectedOrders = [];
+                loadAllOrders();
+                loadDashboard();
+            } catch (error) {
+                alert('Failed to cancel orders');
+            }
+        }
+
+        async function deleteSelectedOrders() {
+            if (!confirm(`Are you sure you want to delete ${selectedOrders.length} order(s)? This cannot be undone.`)) return;
+
+            try {
+                const promises = selectedOrders.map(order =>
+                    fetch(`${API_BASE}/api/orders/${order.id}/`, { method: 'DELETE' })
+                );
+
+                await Promise.all(promises);
+                alert('Orders deleted successfully!');
+
+                // Clear selection
+                selectedOrders = [];
+                loadAllOrders();
+                loadDashboard();
+            } catch (error) {
+                alert('Failed to delete orders');
             }
         }
 

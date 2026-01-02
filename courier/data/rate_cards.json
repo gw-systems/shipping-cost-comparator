@@ -174,27 +174,5 @@
         "cod_fixed": 44.29,
         "cod_percent": 0.016,
         "active": true
-    },
-    {
-        "carrier_name": "test",
-        "mode": "Surface",
-        "min_weight": 0.5,
-        "forward_rates": {
-            "z_a": 15,
-            "z_b": 30,
-            "z_c": 45,
-            "z_d": 60,
-            "z_f": 75
-        },
-        "additional_rates": {
-            "z_a": 15,
-            "z_b": 30,
-            "z_c": 45,
-            "z_d": 60,
-            "z_f": 75
-        },
-        "cod_fixed": 0,
-        "cod_percent": 0.015,
-        "active": true
     }
 ]
