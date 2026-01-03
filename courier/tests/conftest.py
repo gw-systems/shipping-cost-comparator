@@ -9,8 +9,9 @@ import json
 import shutil
 from django.conf import settings
 from django.test import Client
-from courier.models import Order, OrderStatus, PaymentMode
+from courier.models import Order, OrderStatus, PaymentMode, FTLOrder
 from datetime import datetime
+from django.utils import timezone
 
 
 # Path to rate cards
@@ -28,9 +29,13 @@ def client():
 @pytest.fixture
 def admin_token():
     """
-    Admin authentication token for protected routes
+    Admin authentication token for protected routes.
+    Returns the plaintext password (not the hash).
+    The authentication system will hash it and compare with ADMIN_PASSWORD_HASH.
     """
-    return os.getenv("ADMIN_PASSWORD", "your-secret-admin-password")
+    # For tests, we use the known password that matches the hash in .env
+    # In production, users provide their actual password which gets hashed and compared
+    return "AdminSecure@2025"
 
 
 @pytest.fixture
@@ -153,7 +158,7 @@ def sample_order(db):
         width=20.0,
         height=10.0,
         payment_mode=PaymentMode.PREPAID,
-        status=OrderStatus.PENDING,
+        status=OrderStatus.DRAFT,
     )
 
     yield order
@@ -242,3 +247,66 @@ def valid_carrier_data():
         "cod_fixed": 25.0,
         "cod_percent": 0.015,
     }
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def sample_ftl_order(db):
+    """
+    Create a sample FTL order in DRAFT status for testing
+    """
+    order = FTLOrder.objects.create(
+        order_number=f"FTL-TEST-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        name="Test Customer",
+        email="test@example.com",
+        phone="9876543210",
+        source_city="Bangalore",
+        source_address="123 Test Street, Bangalore, Karnataka",
+        source_pincode=560001,
+        destination_city="Bhiwandi",
+        destination_pincode=421302,
+        container_type="20FT",
+        base_price=25000.00,
+        escalation_amount=3750.00,  # 15% of base
+        price_with_escalation=28750.00,  # base + escalation
+        gst_amount=5175.00,  # 18% of price_with_escalation
+        total_price=33925.00,  # price_with_escalation + gst
+        status=OrderStatus.DRAFT,
+    )
+
+    yield order
+
+    # Cleanup
+    order.delete()
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def sample_booked_ftl_order(db):
+    """
+    Create a sample FTL order in BOOKED status for testing
+    """
+    order = FTLOrder.objects.create(
+        order_number=f"FTL-BOOKED-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        name="Booked Customer",
+        email="booked@example.com",
+        phone="9123456789",
+        source_city="Bangalore",
+        source_address="456 Booked Avenue, Bangalore, Karnataka",
+        source_pincode=560001,
+        destination_city="Noida",
+        destination_pincode=201301,
+        container_type="20FT",
+        base_price=30000.00,
+        escalation_amount=4500.00,  # 15% of base
+        price_with_escalation=34500.00,  # base + escalation
+        gst_amount=6210.00,  # 18% of price_with_escalation
+        total_price=40710.00,  # price_with_escalation + gst
+        status=OrderStatus.BOOKED,
+        booked_at=timezone.now(),
+    )
+
+    yield order
+
+    # Cleanup
+    order.delete()

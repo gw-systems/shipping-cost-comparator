@@ -10,14 +10,20 @@ app_name = 'courier'
 # Create router for ViewSets
 router = DefaultRouter()
 router.register(r'orders', views.OrderViewSet, basename='order')
+router.register(r'ftl-orders', views.FTLOrderViewSet, basename='ftl-order')
 
 urlpatterns = [
     # Public endpoints
     path('health', views.health_check, name='health'),
     path('compare-rates', views.compare_rates, name='compare-rates'),
     path('pincode/<int:pincode>/', views.lookup_pincode, name='lookup-pincode'),
+    
+    # FTL endpoints
+    path('ftl/routes', views.get_ftl_routes, name='get-ftl-routes'),
+    path('ftl/calculate-rate', views.calculate_ftl_rate, name='calculate-ftl-rate'),
 
     # Order management (includes ViewSet routes)
+    path('orders/<str:pk>/invoice/', views.generate_invoice_pdf, name='generate-invoice'),
     path('', include(router.urls)),
 
     # Admin endpoints
@@ -27,4 +33,6 @@ urlpatterns = [
     path('admin/carriers/<str:carrier_name>/toggle-active', views.toggle_carrier_active, name='admin-toggle-carrier'),
     path('admin/carriers/<str:carrier_name>', views.delete_carrier, name='admin-delete-carrier'),
     path('admin/carriers/<str:carrier_name>/update', views.update_carrier, name='admin-update-carrier'),
+    path('admin/orders', views.admin_orders_list, name='admin-orders-list'),
+    path('admin/dashboard', views.admin_dashboard_stats, name='admin-dashboard-stats'),
 ]

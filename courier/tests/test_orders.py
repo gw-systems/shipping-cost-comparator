@@ -191,17 +191,17 @@ class TestUpdateOrder:
         # Cleanup
         order.delete()
 
-    def test_update_non_draft_order_fails(self, client, sample_order):
+    def test_update_non_draft_order_fails(self, client, sample_booked_order):
         """Test that updating non-DRAFT order fails"""
         update_data = {"recipient_name": "Should Fail"}
 
         response = client.patch(
-            reverse('courier:order-detail', args=[sample_order.id]),
+            reverse('courier:order-detail', args=[sample_booked_order.id]),
             data=json.dumps(update_data),
             content_type='application/json'
         )
 
-        # Should be forbidden since sample_order is PENDING
+        # Should be forbidden since sample_booked_order is BOOKED
         assert response.status_code == 403
 
     def test_update_nonexistent_order(self, client):

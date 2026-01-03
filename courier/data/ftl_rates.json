@@ -1,0 +1,228 @@
+{
+  "Bhiwandi": {
+    "Ludhiana": {
+      "20FT": 57240,
+      "32 FT SXL 7MT": 81620,
+      "32 FT SXL 9MT": 89040
+    },
+    "Noida": {
+      "20FT": 47700,
+      "32 FT SXL 7MT": 66780,
+      "32 FT SXL 9MT": 73458
+    },
+    "Mohali": {
+      "20FT": 52400,
+      "32 FT SXL 7MT": 78705,
+      "32 FT SXL 9MT": 85860
+    },
+    "Bangalore": {
+      "20FT": 37100,
+      "32 FT SXL 7MT": 56180,
+      "32 FT SXL 9MT": 61480
+    },
+    "Farukhnagar": {
+      "20FT": 49820,
+      "32 FT SXL 7MT": 61480,
+      "32 FT SXL 9MT": 69260
+    },
+    "Gurgaon": {
+      "20FT": 49820,
+      "32 FT SXL 7MT": 61480,
+      "32 FT SXL 9MT": 67840
+    },
+    "Delhi": {
+      "20FT": 50880,
+      "32 FT SXL 7MT": 64660,
+      "32 FT SXL 9MT": 69960
+    },
+    "Binola": {
+      "20FT": 50880,
+      "32 FT SXL 7MT": 64660,
+      "32 FT SXL 9MT": 69960
+    },
+    "Chennai": {
+      "20FT": 45580,
+      "32 FT SXL 7MT": 57335,
+      "32 FT SXL 9MT": 64660
+    },
+    "Jaipur": {
+      "20FT": 45580,
+      "32 FT SXL 7MT": 62540,
+      "32 FT SXL 9MT": 66780
+    },
+    "Hyderabad": {
+      "20FT": 33580,
+      "32 FT SXL 7MT": 45890,
+      "32 FT SXL 9MT": 50880
+    },
+    "Kolkata": {
+      "20FT": 77083,
+      "32 FT SXL 7MT": 101760,
+      "32 FT SXL 9MT": 111300
+    },
+    "Indore": {
+      "20FT": 29680,
+      "32 FT SXL 7MT": 38160,
+      "32 FT SXL 9MT": 43460
+    },
+    "Malur": {
+      "20FT": 38690,
+      "32 FT SXL 7MT": 58300,
+      "32 FT SXL 9MT": 67840
+    },
+    "Hubli": {
+      "20FT": 40280,
+      "32 FT SXL 7MT": 57717,
+      "32 FT SXL 9MT": 62540
+    },
+    "Kochi": {
+      "20FT": 56670,
+      "32 FT SXL 7MT": 78305,
+      "32 FT SXL 9MT": 85860
+    },
+    "Hosur": {
+      "20FT": 38690,
+      "32 FT SXL 7MT": 58300,
+      "32 FT SXL 9MT": 60770
+    },
+    "Lucknow": {
+      "20FT": 57240,
+      "32 FT SXL 7MT": 81620,
+      "32 FT SXL 9MT": 89040
+    },
+    "Nagpur": {
+      "20FT": 34980,
+      "32 FT SXL 7MT": 47700,
+      "32 FT SXL 9MT": 52470
+    },
+    "Patna": {
+      "20FT": 77085,
+      "32 FT SXL 7MT": 97880,
+      "32 FT SXL 9MT": 104275
+    },
+    "Raipur": {
+      "20FT": 58300,
+      "32 FT SXL 7MT": 72080,
+      "32 FT SXL 9MT": 76320
+    },
+    "Ahmedabad": {
+      "20FT": 19610,
+      "32 FT SXL 7MT": 25970,
+      "32 FT SXL 9MT": 30210
+    },
+    "Coimbatore": {
+      "20FT": 55120,
+      "32 FT SXL 7MT": 75260,
+      "32 FT SXL 9MT": 82680
+    },
+    "Madurai": {
+      "20FT": 68900,
+      "32 FT SXL 7MT": 78440,
+      "32 FT SXL 9MT": 87980
+    },
+    "Nadiad": {
+      "20FT": 18444,
+      "32 FT SXL 7MT": 25440,
+      "32 FT SXL 9MT": 27285
+    },
+    "Rajkot": {
+      "20FT": 36900,
+      "32 FT SXL 7MT": 47700,
+      "32 FT SXL 9MT": 54060
+    },
+    "Surat": {
+      "20FT": 18020,
+      "32 FT SXL 7MT": 23320,
+      "32 FT SXL 9MT": 27560
+    },
+    "Visakhapatnam": {
+      "20FT": 69960,
+      "32 FT SXL 7MT": 90100,
+      "32 FT SXL 9MT": 92220
+    },
+    "Siliguri": {
+      "20FT": 94446,
+      "32 FT SXL 7MT": 127200,
+      "32 FT SXL 9MT": 148400
+    },
+    "Thirullavur": {
+      "20FT": 47700,
+      "32 FT SXL 7MT": 59360,
+      "32 FT SXL 9MT": 67160
+    },
+    "Guwahati": {
+      "20FT": 108185,
+      "32 FT SXL 7MT": 135680,
+      "32 FT SXL 9MT": 160272
+    },
+    "Bhopal": {
+      "20FT": 35030,
+      "32 FT SXL 7MT": 46640,
+      "32 FT SXL 9MT": 54610
+    },
+    "Calicut": {
+      "20FT": 53576,
+      "32 FT SXL 7MT": 76320,
+      "32 FT SXL 9MT": 85860
+    },
+    "Kozhikode": {
+      "20FT": 53576,
+      "32 FT SXL 7MT": 74185,
+      "32 FT SXL 9MT": 81855
+    },
+    "Vijayawada": {
+      "20FT": 44305,
+      "32 FT SXL 7MT": 59730,
+      "32 FT SXL 9MT": 74200
+    },
+    "Mumbai": {
+      "20FT": 8759,
+      "32 FT SXL 7MT": 10305,
+      "32 FT SXL 9MT": 14840
+    },
+    "Pune": {
+      "20FT": 10305,
+      "32 FT SXL 7MT": 14425,
+      "32 FT SXL 9MT": 26500
+    },
+    "Kolhapur": {
+      "20FT": 23700,
+      "32 FT SXL 7MT": 40185,
+      "32 FT SXL 9MT": 49820
+    },
+    "Aurangabad": {
+      "20FT": 22670,
+      "32 FT SXL 7MT": 36065,
+      "32 FT SXL 9MT": 46640
+    },
+    "Bhubaneshwar": {
+      "20FT": 74835,
+      "32 FT SXL 7MT": 96850,
+      "32 FT SXL 9MT": 120840
+    },
+    "Nadia (Kolkata)": {
+      "20FT": 82425,
+      "32 FT SXL 7MT": 109215,
+      "32 FT SXL 9MT": 133560
+    },
+    "Bandra": {
+      "32 FT SXL 7MT": 84490
+    }
+  },
+  "Bangalore": {
+    "Bhiwandi": {
+      "20FT": 27030,
+      "32 FT SXL 7MT": 34250,
+      "32 FT SXL 9MT": 121580
+    },
+    "Noida": {
+      "20FT": 63600
+    }
+  },
+  "Farukhnagar": {
+    "Indore": {
+      "32 FT SXL 9MT": 49455
+    }
+  }
+}
+

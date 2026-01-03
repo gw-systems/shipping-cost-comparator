@@ -117,11 +117,15 @@
                             <select id="status-filter" onchange="loadOrders()" class="border px-4 py-2 rounded">
                                 <option value="">All Status</option>
                                 <option value="draft">Draft</option>
-                                <option value="pending">Pending</option>
-                                <option value="booked">Booked</option>
-                                <option value="in_transit">In Transit</option>
+                                <option value="booked">Booked / Ready to Ship</option>
+                                <option value="manifested">Manifested</option>
+                                <option value="picked_up">Picked Up / In Transit</option>
+                                <option value="out_for_delivery">Out for Delivery</option>
                                 <option value="delivered">Delivered</option>
-                                <option value="cancelled">Cancelled</option>
+                                <option value="cancelled">Cancelled / Unbooked</option>
+                                <option value="pickup_exception">Pickup Exception</option>
+                                <option value="ndr">NDR (Non-Delivery Report)</option>
+                                <option value="rto">RTO (Return to Origin)</option>
                             </select>
                         </div>
                     </div>
@@ -325,6 +329,164 @@
                 </div>
             </div>
 
+            <!-- Edit Carrier Modal -->
+            <div id="editCarrierModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+                <div class="bg-white rounded-lg shadow-xl p-8 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Edit Carrier</h2>
+                        <button onclick="closeEditCarrierModal()" class="text-gray-500 hover:text-gray-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="editCarrierForm" class="space-y-6">
+                        <input type="hidden" id="edit-carrier-original-name">
+                        <!-- Basic Info -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Carrier Name *</label>
+                                <input type="text" id="edit-carrier-name" required class="w-full border px-3 py-2 rounded" placeholder="e.g., Blue Dart">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Mode *</label>
+                                <select id="edit-carrier-mode" required class="w-full border px-3 py-2 rounded">
+                                    <option value="Surface">Surface</option>
+                                    <option value="Air">Air</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Minimum Weight (kg) *</label>
+                                <input type="number" step="0.1" id="edit-min-weight" required class="w-full border px-3 py-2 rounded" value="0.5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Active</label>
+                                <select id="edit-carrier-active" class="w-full border px-3 py-2 rounded">
+                                    <option value="true">Yes</option>
+                                    <option value="false">No</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Forward Rates -->
+                        <div class="border-t pt-4">
+                            <h3 class="font-bold mb-3">Forward Rates (₹ per 0.5kg)</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone A (Local) *</label>
+                                    <input type="number" step="0.01" id="edit-fwd-z_a" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone B (Within State) *</label>
+                                    <input type="number" step="0.01" id="edit-fwd-z_b" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone C (Metro) *</label>
+                                    <input type="number" step="0.01" id="edit-fwd-z_c" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone D (National) *</label>
+                                    <input type="number" step="0.01" id="edit-fwd-z_d" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone E (Regional) *</label>
+                                    <input type="number" step="0.01" id="edit-fwd-z_e" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone F (Special) *</label>
+                                    <input type="number" step="0.01" id="edit-fwd-z_f" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Weight Rates -->
+                        <div class="border-t pt-4">
+                            <h3 class="font-bold mb-3">Additional Weight Rates (₹ per 0.5kg)</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone A *</label>
+                                    <input type="number" step="0.01" id="edit-add-z_a" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone B *</label>
+                                    <input type="number" step="0.01" id="edit-add-z_b" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone C *</label>
+                                    <input type="number" step="0.01" id="edit-add-z_c" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone D *</label>
+                                    <input type="number" step="0.01" id="edit-add-z_d" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone E *</label>
+                                    <input type="number" step="0.01" id="edit-add-z_e" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone F *</label>
+                                    <input type="number" step="0.01" id="edit-add-z_f" required class="w-full border px-3 py-2 rounded text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- COD Charges -->
+                        <div class="border-t pt-4">
+                            <h3 class="font-bold mb-3">COD Charges</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">COD Fixed (₹) *</label>
+                                    <input type="number" step="0.01" id="edit-cod-fixed" required class="w-full border px-3 py-2 rounded">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">COD Percent (%) *</label>
+                                    <input type="number" step="0.001" id="edit-cod-percent" required class="w-full border px-3 py-2 rounded" placeholder="e.g., 1.5 for 1.5%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RTO Rates (Optional) -->
+                        <div class="border-t pt-4">
+                            <h3 class="font-bold mb-3">RTO Rates (Optional - ₹ per 0.5kg)</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone A</label>
+                                    <input type="number" step="0.01" id="edit-rto-z_a" class="w-full border px-3 py-2 rounded text-sm" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone B</label>
+                                    <input type="number" step="0.01" id="edit-rto-z_b" class="w-full border px-3 py-2 rounded text-sm" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone C</label>
+                                    <input type="number" step="0.01" id="edit-rto-z_c" class="w-full border px-3 py-2 rounded text-sm" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone D</label>
+                                    <input type="number" step="0.01" id="edit-rto-z_d" class="w-full border px-3 py-2 rounded text-sm" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone E</label>
+                                    <input type="number" step="0.01" id="edit-rto-z_e" class="w-full border px-3 py-2 rounded text-sm" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1">Zone F</label>
+                                    <input type="number" step="0.01" id="edit-rto-z_f" class="w-full border px-3 py-2 rounded text-sm" placeholder="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-4 border-t">
+                            <button type="button" onclick="closeEditCarrierModal()" class="px-6 py-2 border rounded hover:bg-gray-50">Cancel</button>
+                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update Carrier</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Edit Order Modal -->
             <div id="editOrderModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
                 <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -348,11 +510,15 @@
                                 <label class="block text-sm font-medium mb-1">Status</label>
                                 <select id="edit-status" class="w-full border px-3 py-2 rounded">
                                     <option value="draft">Draft</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="booked">Booked</option>
-                                    <option value="in_transit">In Transit</option>
+                                    <option value="booked">Booked / Ready to Ship</option>
+                                    <option value="manifested">Manifested</option>
+                                    <option value="picked_up">Picked Up / In Transit</option>
+                                    <option value="out_for_delivery">Out for Delivery</option>
                                     <option value="delivered">Delivered</option>
-                                    <option value="cancelled">Cancelled</option>
+                                    <option value="cancelled">Cancelled / Unbooked</option>
+                                    <option value="pickup_exception">Pickup Exception</option>
+                                    <option value="ndr">NDR (Non-Delivery Report)</option>
+                                    <option value="rto">RTO (Return to Origin)</option>
                                 </select>
                             </div>
                         </div>
@@ -596,8 +762,9 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <button onclick="toggleCarrier('${carrier.carrier_name}', ${!isActive})" class="text-blue-600 hover:underline mr-3">${isActive ? 'Deactivate' : 'Activate'}</button>
-                                <button onclick="deleteCarrier('${carrier.carrier_name}')" class="text-red-600 hover:underline">Delete</button>
+                                <button onclick="editCarrier('${carrier.carrier_name.replace(/'/g, "\\'")}')" class="text-green-600 hover:underline mr-3">Edit</button>
+                                <button onclick="toggleCarrier('${carrier.carrier_name.replace(/'/g, "\\'")}', ${!isActive})" class="text-blue-600 hover:underline mr-3">${isActive ? 'Deactivate' : 'Activate'}</button>
+                                <button onclick="deleteCarrier('${carrier.carrier_name.replace(/'/g, "\\'")}')" class="text-red-600 hover:underline">Delete</button>
                             </td>
                         </tr>
                     `;
@@ -969,6 +1136,71 @@
             document.getElementById('addCarrierForm').reset();
         }
 
+        async function editCarrier(carrierName) {
+            try {
+                // Load all carriers to find the one to edit
+                const response = await fetch(`${API_BASE}/api/admin/rates`, {
+                    headers: { 'X-Admin-Token': adminToken }
+                });
+                const carriers = await response.json();
+                const carrier = carriers.find(c => c.carrier_name === carrierName);
+
+                if (!carrier) {
+                    alert('Carrier not found');
+                    return;
+                }
+
+                // Populate the edit form
+                document.getElementById('edit-carrier-original-name').value = carrier.carrier_name;
+                document.getElementById('edit-carrier-name').value = carrier.carrier_name;
+                document.getElementById('edit-carrier-mode').value = carrier.mode || 'Surface';
+                document.getElementById('edit-min-weight').value = carrier.min_weight || 0.5;
+                document.getElementById('edit-carrier-active').value = (carrier.active !== false).toString();
+
+                // Forward rates
+                const forwardRates = carrier.forward_rates || {};
+                document.getElementById('edit-fwd-z_a').value = forwardRates.z_a || 0;
+                document.getElementById('edit-fwd-z_b').value = forwardRates.z_b || 0;
+                document.getElementById('edit-fwd-z_c').value = forwardRates.z_c || 0;
+                document.getElementById('edit-fwd-z_d').value = forwardRates.z_d || 0;
+                document.getElementById('edit-fwd-z_e').value = forwardRates.z_e || 0;
+                document.getElementById('edit-fwd-z_f').value = forwardRates.z_f || 0;
+
+                // Additional rates
+                const additionalRates = carrier.additional_rates || {};
+                document.getElementById('edit-add-z_a').value = additionalRates.z_a || 0;
+                document.getElementById('edit-add-z_b').value = additionalRates.z_b || 0;
+                document.getElementById('edit-add-z_c').value = additionalRates.z_c || 0;
+                document.getElementById('edit-add-z_d').value = additionalRates.z_d || 0;
+                document.getElementById('edit-add-z_e').value = additionalRates.z_e || 0;
+                document.getElementById('edit-add-z_f').value = additionalRates.z_f || 0;
+
+                // COD charges
+                document.getElementById('edit-cod-fixed').value = carrier.cod_fixed || 0;
+                document.getElementById('edit-cod-percent').value = ((carrier.cod_percent || 0) * 100).toFixed(3);
+
+                // RTO rates (optional)
+                const rtoRates = carrier.rto_rates || {};
+                document.getElementById('edit-rto-z_a').value = rtoRates.z_a || '';
+                document.getElementById('edit-rto-z_b').value = rtoRates.z_b || '';
+                document.getElementById('edit-rto-z_c').value = rtoRates.z_c || '';
+                document.getElementById('edit-rto-z_d').value = rtoRates.z_d || '';
+                document.getElementById('edit-rto-z_e').value = rtoRates.z_e || '';
+                document.getElementById('edit-rto-z_f').value = rtoRates.z_f || '';
+
+                // Show modal
+                document.getElementById('editCarrierModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading carrier for edit:', error);
+                alert('Error loading carrier details');
+            }
+        }
+
+        function closeEditCarrierModal() {
+            document.getElementById('editCarrierModal').classList.add('hidden');
+            document.getElementById('editCarrierForm').reset();
+        }
+
         document.getElementById('addCarrierForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -1034,6 +1266,75 @@
             } catch (error) {
                 console.error('Error adding carrier:', error);
                 alert('Error adding carrier. Please check your input and try again.');
+            }
+        });
+
+        document.getElementById('editCarrierForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const originalName = document.getElementById('edit-carrier-original-name').value;
+            const carrierData = {
+                carrier_name: document.getElementById('edit-carrier-name').value,
+                mode: document.getElementById('edit-carrier-mode').value,
+                min_weight: parseFloat(document.getElementById('edit-min-weight').value),
+                active: document.getElementById('edit-carrier-active').value === 'true',
+                forward_rates: {
+                    z_a: parseFloat(document.getElementById('edit-fwd-z_a').value),
+                    z_b: parseFloat(document.getElementById('edit-fwd-z_b').value),
+                    z_c: parseFloat(document.getElementById('edit-fwd-z_c').value),
+                    z_d: parseFloat(document.getElementById('edit-fwd-z_d').value),
+                    z_e: parseFloat(document.getElementById('edit-fwd-z_e').value),
+                    z_f: parseFloat(document.getElementById('edit-fwd-z_f').value)
+                },
+                additional_rates: {
+                    z_a: parseFloat(document.getElementById('edit-add-z_a').value),
+                    z_b: parseFloat(document.getElementById('edit-add-z_b').value),
+                    z_c: parseFloat(document.getElementById('edit-add-z_c').value),
+                    z_d: parseFloat(document.getElementById('edit-add-z_d').value),
+                    z_e: parseFloat(document.getElementById('edit-add-z_e').value),
+                    z_f: parseFloat(document.getElementById('edit-add-z_f').value)
+                },
+                cod_fixed: parseFloat(document.getElementById('edit-cod-fixed').value),
+                cod_percent: parseFloat(document.getElementById('edit-cod-percent').value) / 100 // Convert to decimal
+            };
+
+            // Add RTO rates if provided
+            const rtoZones = ['z_a', 'z_b', 'z_c', 'z_d', 'z_e', 'z_f'];
+            const rtoRates = {};
+            let hasRtoRates = false;
+
+            rtoZones.forEach(zone => {
+                const value = parseFloat(document.getElementById(`edit-rto-${zone}`).value) || 0;
+                rtoRates[zone] = value;
+                if (value > 0) hasRtoRates = true;
+            });
+
+            if (hasRtoRates) {
+                carrierData.rto_rates = rtoRates;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/carriers/${encodeURIComponent(originalName)}/update`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Token': adminToken
+                    },
+                    body: JSON.stringify(carrierData)
+                });
+
+                if (response.ok) {
+                    alert('Carrier updated successfully!');
+                    closeEditCarrierModal();
+                    loadCarriers();
+                    loadDashboard();
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to update carrier: ${error.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error updating carrier:', error);
+                alert('Error updating carrier. Please check your input and try again.');
             }
         });
     </script>

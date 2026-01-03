@@ -14,15 +14,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables
 load_dotenv(BASE_DIR / '.env')
 
+# =============================================================================
+# ENVIRONMENT CONFIGURATION
+# =============================================================================
+
+# Environment: 'development', 'staging', 'production'
+ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-s7fy1h1&v8qy__#8#s5&@-&jnfd)+rnz&4^jym+5by_cayrj6p')
+
+# Validate secret key in production
+if ENVIRONMENT == 'production' and SECRET_KEY.startswith('django-insecure'):
+    raise RuntimeError("CRITICAL: Using insecure SECRET_KEY in production!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+# Validate DEBUG is off in production
+if ENVIRONMENT == 'production' and DEBUG:
+    raise RuntimeError("CRITICAL: DEBUG must be False in production!")
 
-# Admin Password Validation (from original FastAPI app)
+# ALLOWED_HOSTS - strict in production
+if ENVIRONMENT == 'production':
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+    ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
+    if not ALLOWED_HOSTS or '*' in ALLOWED_HOSTS:
+        raise RuntimeError("CRITICAL: ALLOWED_HOSTS must be explicitly set in production (no wildcards)!")
+else:
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+
+# Admin Password Validation
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 if not ADMIN_PASSWORD:
     raise RuntimeError(
@@ -139,8 +161,35 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS Configuration (allowing all origins like FastAPI)
-CORS_ALLOW_ALL_ORIGINS = True
+# =============================================================================
+# CORS Configuration
+# =============================================================================
+
+if ENVIRONMENT == 'production':
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in CORS_ALLOWED_ORIGINS if o.strip()]
+    if not CORS_ALLOWED_ORIGINS:
+        # Default to ALLOWED_HOSTS with https
+        CORS_ALLOWED_ORIGINS = [f'https://{h}' for h in ALLOWED_HOSTS]
+else:
+    # Allow all origins in development
+    CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS settings
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-admin-token',  # Custom admin header
+]
 
 # Django REST Framework Configuration
 REST_FRAMEWORK = {
@@ -213,3 +262,99 @@ LOGGING = {
         },
     },
 }
+
+# =============================================================================
+# PRODUCTION SECURITY SETTINGS
+# =============================================================================
+
+if ENVIRONMENT == 'production' or not DEBUG:
+    # HTTPS/SSL
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # HTTP Strict Transport Security
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Cookie security
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = True
+    
+    # XSS and content security
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # Disable browsable API in production
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+        'rest_framework.renderers.JSONRenderer',
+    ]
+
+# =============================================================================
+# PASSWORD HASHERS (Argon2 prioritized)
+# =============================================================================
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
+
+# =============================================================================
+# CACHING (Redis in production, local memory in dev)
+# =============================================================================
+
+REDIS_URL = os.getenv('REDIS_URL')
+
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'courier',
+            'TIMEOUT': 300,  # 5 minutes default
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+    }
+
+# =============================================================================
+# SENTRY ERROR MONITORING (Production)
+# =============================================================================
+
+SENTRY_DSN = os.getenv('SENTRY_DSN')
+
+if SENTRY_DSN and ENVIRONMENT == 'production':
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+        
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[
+                DjangoIntegration(),
+                LoggingIntegration(
+                    level=None,  # Capture all log levels
+                    event_level=None,  # Send all as breadcrumbs
+                ),
+            ],
+            traces_sample_rate=0.1,  # 10% of transactions
+            send_default_pii=False,  # Don't send PII
+            environment=ENVIRONMENT,
+        )
+    except ImportError:
+        pass  # sentry-sdk not installed
+

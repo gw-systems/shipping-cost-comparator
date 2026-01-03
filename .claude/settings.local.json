@@ -26,7 +26,9 @@
       "Bash(xargs kill:*)",
       "Bash(tree:*)",
       "Bash(mkdir:*)",
-      "Bash(del test_permissions.py)"
+      "Bash(del test_permissions.py)",
+      "Bash(ping:*)",
+      "Bash(wc:*)"
     ]
   }
 }

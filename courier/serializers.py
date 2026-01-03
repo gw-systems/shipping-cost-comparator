@@ -3,7 +3,7 @@ Django REST Framework Serializers.
 Converted from Pydantic V2 schemas to DRF serializers.
 """
 from rest_framework import serializers
-from .models import Order, OrderStatus, PaymentMode
+from .models import Order, OrderStatus, PaymentMode, FTLOrder
 import re
 
 
@@ -191,3 +191,72 @@ class CarrierSelectionSerializer(serializers.Serializer):
     )
     carrier_name = serializers.CharField(min_length=1)
     mode = serializers.ChoiceField(choices=['Surface', 'Air'])
+
+
+class FTLOrderSerializer(serializers.ModelSerializer):
+    """FTL Order serializer"""
+
+    class Meta:
+        model = FTLOrder
+        fields = [
+            'id', 'order_number', 'name', 'email', 'phone',
+            'source_city', 'source_address', 'source_pincode',
+            'destination_city', 'destination_pincode',
+            'container_type', 'base_price', 'escalation_amount', 'price_with_escalation',
+            'gst_amount', 'total_price', 'status', 'created_at', 'updated_at', 'notes'
+        ]
+        read_only_fields = [
+            'id', 'order_number', 'base_price', 'escalation_amount', 'price_with_escalation',
+            'gst_amount', 'total_price', 'created_at', 'updated_at'
+        ]
+
+    def validate_name(self, value):
+        if value:
+            value = value.strip()
+            if not value:
+                raise serializers.ValidationError('Name cannot be empty')
+            if not all(c.isalpha() or c in ' .-' for c in value):
+                raise serializers.ValidationError('Name must contain only letters, spaces, dots, and hyphens')
+        return value
+
+    def validate_email(self, value):
+        if value:
+            value = value.strip()
+            if value and ('@' not in value or '.' not in value.split('@')[1]):
+                raise serializers.ValidationError('Invalid email format')
+        return value if value else None
+
+    def validate_phone(self, value):
+        if value:
+            value = value.strip().replace(' ', '').replace('-', '')
+            if not value.isdigit():
+                raise serializers.ValidationError('Phone number must contain only digits')
+            if len(value) != 10:
+                raise serializers.ValidationError('Phone number must be exactly 10 digits')
+        return value
+
+    def validate_source_address(self, value):
+        if value:
+            value = value.strip()
+            if not value:
+                raise serializers.ValidationError('Source address cannot be empty')
+            if len(value) < 10:
+                raise serializers.ValidationError('Source address must be at least 10 characters long')
+        return value
+
+    def validate_source_pincode(self, value):
+        if not (100000 <= value <= 999999):
+            raise serializers.ValidationError('Source pincode must be exactly 6 digits')
+        return value
+
+    def validate_destination_pincode(self, value):
+        if not (100000 <= value <= 999999):
+            raise serializers.ValidationError('Destination pincode must be exactly 6 digits')
+        return value
+
+
+class FTLRateRequestSerializer(serializers.Serializer):
+    """FTL Rate calculation request"""
+    source_city = serializers.CharField(min_length=1)
+    destination_city = serializers.CharField(min_length=1)
+    container_type = serializers.ChoiceField(choices=['20FT', '32 FT SXL 7MT', '32 FT SXL 9MT'])
