@@ -13,7 +13,6 @@ from courier.serializers import (
     OrderSerializer, OrderUpdateSerializer, CarrierSelectionSerializer
 )
 from courier.engine import calculate_cost
-from courier.zones import get_zone_column
 from .base import load_rates, generate_order_number
 
 
@@ -131,10 +130,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             if order.payment_mode == PaymentMode.COD
         )
 
-        # Get zone
-        zone_key, zone_label = get_zone_column(source_pincode, dest_pincode)
-
-        # Load carriers
+        # Load carriers (zone logic is now handled inside calculate_cost)
         rates = load_rates()
         results = []
 
@@ -145,19 +141,25 @@ class OrderViewSet(viewsets.ModelViewSet):
             try:
                 res = calculate_cost(
                     weight=total_weight,
-                    zone_key=zone_key,
+                    source_pincode=source_pincode,
+                    dest_pincode=dest_pincode,
                     carrier_data=carrier,
                     is_cod=is_cod,
                     order_value=total_order_value
                 )
 
-                res["applied_zone"] = zone_label
+                # Skip if not serviceable
+                if res.get("servicable") == False:
+                    continue
+
                 res["mode"] = carrier.get("mode", "Surface")
                 res["order_count"] = len(order_ids)
                 res["total_weight"] = total_weight
                 results.append(res)
 
-            except Exception:
+            except Exception as e:
+                import logging
+                logging.getLogger('courier').warning(f"Carrier {carrier.get('carrier_name')} failed: {e}")
                 continue
 
         if not results:
@@ -208,8 +210,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             if order.payment_mode == PaymentMode.COD
         )
 
-        zone_key, zone_label = get_zone_column(source_pincode, dest_pincode)
-
         # Find the carrier
         rates = load_rates()
         carrier_data = None
@@ -225,22 +225,30 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Calculate cost
+        # Calculate cost using refactored engine
         cost_result = calculate_cost(
             weight=total_weight,
-            zone_key=zone_key,
+            source_pincode=source_pincode,
+            dest_pincode=dest_pincode,
             carrier_data=carrier_data,
             is_cod=is_cod,
             order_value=total_order_value
         )
 
+        # Check if serviceable
+        if cost_result.get("servicable") == False:
+            return Response(
+                {"detail": f"Route not serviceable by {data['carrier_name']}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Update all orders
         for order in orders:
             order.selected_carrier = data['carrier_name']
             order.mode = data['mode']
-            order.zone_applied = zone_label
+            order.zone_applied = cost_result.get("applied_zone", "")
             order.total_cost = cost_result["total_cost"]
-            order.cost_breakdown = cost_result["breakdown"]
+            order.cost_breakdown = cost_result.get("breakdown", {})
             order.status = OrderStatus.BOOKED
             order.booked_at = timezone.now()
             order.save()

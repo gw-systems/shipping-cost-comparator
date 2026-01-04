@@ -26,7 +26,7 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-# Development-specific logging
-LOGGING['loggers']['django']['level'] = 'DEBUG'
-LOGGING['loggers']['courier']['level'] = 'DEBUG'
-LOGGING['handlers']['console']['level'] = 'DEBUG'
+# Development-specific logging (INFO level for cleaner output)
+LOGGING['loggers']['django']['level'] = 'INFO'
+LOGGING['loggers']['courier']['level'] = 'INFO'
+LOGGING['handlers']['console']['level'] = 'INFO'

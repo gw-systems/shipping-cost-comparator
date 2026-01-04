@@ -29,7 +29,7 @@ logger = logging.getLogger('courier')
 
 # Path configurations
 BASE_DIR = settings.BASE_DIR
-RATE_CARD_PATH = os.path.join(BASE_DIR, "courier", "data", "rate_cards.json")
+RATE_CARD_PATH = os.path.join(BASE_DIR, "courier", "data", "master_card.json")
 FTL_RATES_PATH = os.path.join(BASE_DIR, "courier", "data", "ftl_rates.json")
 
 

@@ -23,8 +23,9 @@ urlpatterns = [
     path('ftl/calculate-rate', views.calculate_ftl_rate, name='calculate-ftl-rate'),
 
     # Order management (includes ViewSet routes)
-    path('orders/<str:pk>/invoice/', views.generate_invoice_pdf, name='generate-invoice'),
+    # IMPORTANT: Router must come BEFORE manual paths with <pk> to prevent action names being captured
     path('', include(router.urls)),
+    path('orders/<str:pk>/invoice/', views.generate_invoice_pdf, name='generate-invoice'),
 
     # Admin endpoints
     path('admin/rates', views.get_all_rates, name='admin-get-rates'),

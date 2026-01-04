@@ -1,0 +1,59 @@
+{
+    "states": {
+        "gujarat": [
+            "gujrat",
+            "gj",
+            "guj"
+        ],
+        "maharashtra": [
+            "mh",
+            "mah",
+            "maharastra"
+        ],
+        "delhi": [
+            "dl",
+            "new delhi",
+            "nct"
+        ],
+        "west bengal": [
+            "wb",
+            "westbangal"
+        ],
+        "uttar pradesh": [
+            "up",
+            "uttarpradesh"
+        ],
+        "madhya pradesh": [
+            "mp",
+            "madhyapradesh"
+        ],
+        "karnataka": [
+            "ka",
+            "karnatka"
+        ],
+        "tamil nadu": [
+            "tn",
+            "tamilnadu"
+        ],
+        "telangana": [
+            "tg",
+            "telengana"
+        ]
+    },
+    "cities": {
+        "ahmedabad": [
+            "vapi ahmedabad",
+            "amd"
+        ],
+        "mumbai": [
+            "bombay",
+            "navi mumbai"
+        ],
+        "bengaluru": [
+            "bangalore"
+        ],
+        "kolkata": [
+            "calcutta"
+        ]
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "fixed_charges": {
+        "docket_charge": 50,
+        "green_tax": 10,
+        "handling_charge": 20
+    },
+    "percentage_charges": {
+        "fuel_surcharge": 0.15,
+        "fov_charge": 0.02,
+        "covid_surcharge": 0.05
+    }
+}
