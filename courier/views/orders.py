@@ -61,44 +61,16 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request, *args, **kwargs):
-        """Update an order - only allowed for DRAFT orders"""
-        order = self.get_object()
-
-        # Only DRAFT orders can be edited
-        if order.status != OrderStatus.DRAFT:
-            return Response(
-                {"detail": "You can only edit orders in DRAFT status"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
+        """Update an order - admins can edit orders in any status"""
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
-        """Partial update an order - only allowed for DRAFT orders"""
-        order = self.get_object()
-
-        # Only DRAFT orders can be edited
-        if order.status != OrderStatus.DRAFT:
-            return Response(
-                {"detail": "You can only edit orders in DRAFT status"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
+        """Partial update an order - admins can edit orders in any status"""
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        """Delete an order - allowed for DRAFT or CANCELLED orders"""
-        order = self.get_object()
-
-        # Only DRAFT or CANCELLED orders can be deleted
-        if order.status not in [OrderStatus.DRAFT, OrderStatus.CANCELLED]:
-            return Response(
-                {"detail": "You can only delete orders in DRAFT or CANCELLED status"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        order.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        """Delete an order - admins can delete orders in any status"""
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=False, methods=['post'], url_path='compare-carriers')
     def compare_carriers(self, request):
