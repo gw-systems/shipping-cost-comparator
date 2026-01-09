@@ -89,32 +89,52 @@ function renderCalculatorBoxes() {
         <div>
             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Weight (kg)</label>
             <input type="number" step="0.01" min="0.01" value="${box.weight}" 
+                id="calc-weight-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
-                onchange="updateCalculatorBox(${box.id}, 'weight', this.value)" placeholder="0.00">
+                onchange="updateCalculatorBox(${box.id}, 'weight', this.value)" 
+                onblur="validateCalcField(this, 'weight')"
+                oninput="clearCalcError(this)"
+                placeholder="0.00">
         </div>
         <div>
             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">L (cm)</label>
             <input type="number" step="0.1" min="0.1" value="${box.length}" 
+                id="calc-length-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
-                onchange="updateCalculatorBox(${box.id}, 'length', this.value)" placeholder="10">
+                onchange="updateCalculatorBox(${box.id}, 'length', this.value)" 
+                onblur="validateCalcField(this, 'dimension')"
+                oninput="clearCalcError(this)"
+                placeholder="10">
         </div>
         <div>
             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">W (cm)</label>
             <input type="number" step="0.1" min="0.1" value="${box.width}" 
-               class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
-               onchange="updateCalculatorBox(${box.id}, 'width', this.value)" placeholder="10">
+                id="calc-width-${box.id}"
+                class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
+                onchange="updateCalculatorBox(${box.id}, 'width', this.value)" 
+                onblur="validateCalcField(this, 'dimension')"
+                oninput="clearCalcError(this)"
+                placeholder="10">
         </div>
         <div>
             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">H (cm)</label>
             <input type="number" step="0.1" min="0.1" value="${box.height}" 
+                id="calc-height-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
-                onchange="updateCalculatorBox(${box.id}, 'height', this.value)" placeholder="10">
+                onchange="updateCalculatorBox(${box.id}, 'height', this.value)" 
+                onblur="validateCalcField(this, 'dimension')"
+                oninput="clearCalcError(this)"
+                placeholder="10">
         </div>
         <div>
-            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Value (₹)</label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Value (₹) <span class="text-slate-300 font-normal">(optional)</span></label>
             <input type="number" step="0.01" min="0" value="${box.orderValue}" 
+                id="calc-value-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
-                onchange="updateCalculatorBox(${box.id}, 'orderValue', this.value)" placeholder="0">
+                onchange="updateCalculatorBox(${box.id}, 'orderValue', this.value)" 
+                onblur="validateCalcField(this, 'value')"
+                oninput="clearCalcError(this)"
+                placeholder="0">
         </div>
     </div>
     `).join('');
@@ -181,6 +201,88 @@ function calculateBoxTotals() {
     return { totalApplicable, totalOrderValue };
 }
 
+// ============================================================================
+// VALIDATION FUNCTIONS FOR CALCULATOR
+// ============================================================================
+
+// Validate calculator field based on type
+function validateCalcField(input, type) {
+    const value = parseFloat(input.value);
+    let isValid = true;
+    let errorMessage = '';
+
+    switch (type) {
+        case 'weight':
+            // Weight must be positive
+            isValid = !isNaN(value) && value > 0;
+            if (!isValid) {
+                errorMessage = input.value === '' ? 'Weight is required' : 'Weight must be greater than 0';
+            }
+            break;
+        case 'dimension':
+            // Dimensions must be positive
+            isValid = !isNaN(value) && value > 0;
+            if (!isValid) {
+                errorMessage = input.value === '' ? 'Dimension is required' : 'Dimension must be greater than 0';
+            }
+            break;
+        case 'value':
+            // Value is optional but must be non-negative if provided
+            isValid = input.value === '' || (!isNaN(value) && value >= 0);
+            if (!isValid) {
+                errorMessage = 'Value must be 0 or greater';
+            }
+            break;
+        case 'pincode':
+            // Pincode must be exactly 6 digits
+            isValid = /^\d{6}$/.test(input.value);
+            if (!isValid) {
+                if (input.value === '') {
+                    errorMessage = 'Pincode is required';
+                } else if (input.value.length < 6) {
+                    errorMessage = 'Pincode must be 6 digits';
+                } else {
+                    errorMessage = 'Invalid pincode format';
+                }
+            }
+            break;
+    }
+
+    // Remove existing error message
+    const existingError = input.parentElement.querySelector('.validation-error');
+    if (existingError) {
+        existingError.remove();
+    }
+
+    if (!isValid) {
+        input.classList.remove('border-slate-300');
+        input.classList.add('border-red-500', 'border-2');
+
+        // Add error message below the field
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'validation-error text-red-600 text-xs mt-1';
+        errorDiv.textContent = errorMessage;
+        input.parentElement.appendChild(errorDiv);
+    } else {
+        input.classList.remove('border-red-500', 'border-2');
+        input.classList.add('border-slate-300');
+    }
+
+    return isValid;
+}
+
+// Clear error styling from calculator field
+function clearCalcError(input) {
+    input.classList.remove('border-red-500', 'border-2');
+    input.classList.add('border-slate-300');
+
+    // Remove error message if exists
+    const existingError = input.parentElement.querySelector('.validation-error');
+    if (existingError) {
+        existingError.remove();
+    }
+}
+
 // Calculate Regular Rate AND Send to API
 async function calculateRegularRate(e) {
     e.preventDefault();
@@ -189,6 +291,53 @@ async function calculateRegularRate(e) {
 
     const source = formData.get('source_pincode');
     const dest = formData.get('dest_pincode');
+
+    // Validate pincodes first
+    const sourcePincodeInput = form.querySelector('input[name="source_pincode"]');
+    const destPincodeInput = form.querySelector('input[name="dest_pincode"]');
+
+    let isValid = true;
+
+    if (!validateCalcField(sourcePincodeInput, 'pincode')) {
+        isValid = false;
+    }
+
+    if (!validateCalcField(destPincodeInput, 'pincode')) {
+        isValid = false;
+    }
+
+    // Validate all box fields
+    calculatorBoxes.forEach(box => {
+        const weightInput = document.getElementById(`calc-weight-${box.id}`);
+        const lengthInput = document.getElementById(`calc-length-${box.id}`);
+        const widthInput = document.getElementById(`calc-width-${box.id}`);
+        const heightInput = document.getElementById(`calc-height-${box.id}`);
+        const valueInput = document.getElementById(`calc-value-${box.id}`);
+
+        if (weightInput && !validateCalcField(weightInput, 'weight')) {
+            isValid = false;
+        }
+        if (lengthInput && !validateCalcField(lengthInput, 'dimension')) {
+            isValid = false;
+        }
+        if (widthInput && !validateCalcField(widthInput, 'dimension')) {
+            isValid = false;
+        }
+        if (heightInput && !validateCalcField(heightInput, 'dimension')) {
+            isValid = false;
+        }
+        if (valueInput && !validateCalcField(valueInput, 'value')) {
+            isValid = false;
+        }
+    });
+
+    // If validation failed, stop here
+    if (!isValid) {
+        if (window.toast) {
+            toast.error("Please fix the validation errors before calculating rates");
+        }
+        return;
+    }
 
     // Validate Boxes
     const validBoxes = calculatorBoxes.filter(b => b.weight > 0);
