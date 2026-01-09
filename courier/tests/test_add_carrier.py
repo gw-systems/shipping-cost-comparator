@@ -5,13 +5,8 @@ Migrated from FastAPI to Django
 
 import pytest
 import json
-import os
 from django.urls import reverse
-from django.conf import settings
-
-
-RATE_CARD_PATH = os.path.join(settings.BASE_DIR, "courier", "data", "rate_cards.json")
-
+from courier.models import Courier
 
 @pytest.mark.django_db
 class TestAddCarrier:
@@ -31,24 +26,17 @@ class TestAddCarrier:
         assert data["status"] == "success"
         assert "added successfully" in data["message"]
 
-        # Verify carrier was added to file
-        with open(RATE_CARD_PATH, "r") as f:
-            rates = json.load(f)
-
-        carrier_names = [c["carrier_name"] for c in rates]
-        assert "Test Express" in carrier_names
+        # Verify carrier was added to DB
+        assert Courier.objects.filter(name="Test Express").exists()
+        courier = Courier.objects.get(name="Test Express")
+        assert courier.carrier_mode == "Surface"
 
     def test_add_carrier_duplicate_name(self, client, admin_token, valid_carrier_data):
         """Test rejection of duplicate carrier name"""
-        # First add the carrier
-        client.post(
-            reverse('courier:admin-add-carrier'),
-            data=json.dumps(valid_carrier_data),
-            content_type='application/json',
-            HTTP_X_ADMIN_TOKEN=admin_token
-        )
+        # First add the carrier to DB directly
+        Courier.objects.create(name="Test Express", carrier_mode="Surface", min_weight=0.5)
 
-        # Try to add again with same name
+        # Try to add again via API
         response = client.post(
             reverse('courier:admin-add-carrier'),
             data=json.dumps(valid_carrier_data),
@@ -171,7 +159,8 @@ class TestAddCarrier:
         )
 
         assert response.status_code in [200, 201]
-        assert response.json()["carrier"]["mode"] == "Air"
+        assert "Air Express" in response.json()["message"]
+        assert Courier.objects.filter(name="Air Express", carrier_mode="Air").exists()
 
     def test_add_carrier_missing_forward_rate_zone(self, client, admin_token, valid_carrier_data):
         """Test validation when a forward rate zone is missing"""
@@ -185,22 +174,3 @@ class TestAddCarrier:
         )
 
         assert response.status_code == 400
-
-    def test_add_carrier_backup_created(self, client, admin_token, valid_carrier_data):
-        """Test that backup file is created before adding carrier"""
-        backup_path = RATE_CARD_PATH + ".bak"
-        valid_carrier_data["carrier_name"] = "Backup Test Carrier"
-
-        # Remove backup if exists
-        if os.path.exists(backup_path):
-            os.remove(backup_path)
-
-        response = client.post(
-            reverse('courier:admin-add-carrier'),
-            data=json.dumps(valid_carrier_data),
-            content_type='application/json',
-            HTTP_X_ADMIN_TOKEN=admin_token
-        )
-
-        assert response.status_code in [200, 201]
-        assert os.path.exists(backup_path), "Backup file should be created"

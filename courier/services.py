@@ -67,7 +67,7 @@ class CarrierService:
                     order_value=total_order_value
                 )
 
-                if res.get("servicable") is False:
+                if res.get("serviceable") is False:
                     continue
 
                 res["mode"] = carrier.get("mode", "Surface")

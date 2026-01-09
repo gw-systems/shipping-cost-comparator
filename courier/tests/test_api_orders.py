@@ -1,25 +1,39 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from courier.models import Order, OrderStatus, Courier, SystemConfig
+from courier.models import Order, OrderStatus, Courier, SystemConfig, CourierZoneRate
 
 class OrderAPITest(APITestCase):
     def setUp(self):
         # Create System Config
-        SystemConfig.objects.create(
-            diesel_price_current=95.0,
-            base_diesel_price=90.0
+        SystemConfig.objects.get_or_create(
+            pk=1,
+            defaults={
+                'diesel_price_current': 95.0,
+                'base_diesel_price': 90.0
+            }
         )
         
-        # Create a Courier
+        # Create a Courier using the new structure
         self.courier = Courier.objects.create(
             name="Test Carrier",
             carrier_type="Courier",
             carrier_mode="Surface",
-            rate_logic="Zonal_Standard",
-            fwd_z_a=50.0,
-            add_z_a=10.0,
             is_active=True
+        )
+        
+        # Add zone rates for the courier
+        CourierZoneRate.objects.create(
+            courier=self.courier,
+            zone_code="z_a",
+            rate_type=CourierZoneRate.RateType.FORWARD,
+            rate=50.0
+        )
+        CourierZoneRate.objects.create(
+            courier=self.courier,
+            zone_code="z_a",
+            rate_type=CourierZoneRate.RateType.ADDITIONAL,
+            rate=10.0
         )
         
         # Create an Order

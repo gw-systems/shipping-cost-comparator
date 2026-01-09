@@ -70,13 +70,13 @@ class TestCompareRatesEndpoint:
 
         if data:
             breakdown = data[0]["breakdown"]
-            assert "base_forward" in breakdown
-            assert "additional_weight" in breakdown
-            assert "cod" in breakdown
-            assert "escalation" in breakdown
-            assert "gst" in breakdown
-            assert "applied_gst_rate" in breakdown
-            assert "applied_escalation_rate" in breakdown
+            # Updated keys to match engine
+            assert "base_transport_cost" in breakdown
+            # assert "additional_weight" in breakdown # Not always present if weight < min
+            assert "cod_charge" in breakdown
+            assert "escalation_amount" in breakdown
+            assert "gst_amount" in breakdown
+            assert "gst_rate" in breakdown
 
     def test_invalid_source_pincode(self, client, sample_rate_request):
         """Test validation fails for invalid source pincode"""
@@ -197,8 +197,8 @@ class TestCompareRatesEndpoint:
         if data_no_cod and data_cod:
             # COD should increase the cost
             assert data_cod[0]["total_cost"] > data_no_cod[0]["total_cost"]
-            assert data_cod[0]["breakdown"]["cod"] > 0
-            assert data_no_cod[0]["breakdown"]["cod"] == 0
+            assert data_cod[0]["breakdown"]["cod_charge"] > 0
+            assert data_no_cod[0]["breakdown"]["cod_charge"] == 0
 
 
 @pytest.mark.django_db

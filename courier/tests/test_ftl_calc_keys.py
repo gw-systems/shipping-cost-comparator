@@ -14,7 +14,7 @@ def test_ftl_calculator_keys():
     mock_data = {
         "Bhiwandi": {
             "Delhi": {
-                "32 FT SXL": 50000
+                "32 FT SXL 7MT": 50000
             }
         }
     }
@@ -27,9 +27,9 @@ def test_ftl_calculator_keys():
         payload = {
             "source_city": "Bhiwandi",
             "destination_city": "Delhi",
-            "container_type": "32 FT SXL"
+            "container_type": "32 FT SXL 7MT"
         }
-        res = client.post('/api/ftl/calculate-rate', data=payload)
+        res = client.post('/api/ftl/calculate-rate', data=payload, format='json')
         assert res.status_code == 200
         data = res.json()
         

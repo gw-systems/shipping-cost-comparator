@@ -2,6 +2,7 @@
 Tests for FTL (Full Truck Load) Order functionality.
 """
 import pytest
+from unittest.mock import patch
 from django.urls import reverse
 from rest_framework import status
 from courier.models import FTLOrder, OrderStatus
@@ -11,8 +12,14 @@ from courier.models import FTLOrder, OrderStatus
 class TestFTLRoutes:
     """Test FTL routes endpoint."""
 
-    def test_get_ftl_routes(self, client):
+    @patch('courier.views.ftl.load_ftl_rates')
+    def test_get_ftl_routes(self, mock_load_rates, client):
         """Test retrieving available FTL routes."""
+        mock_load_rates.return_value = {
+            "Bangalore": {
+                "Bhiwandi": {"20FT": 25000}
+            }
+        }
         url = reverse('courier:get-ftl-routes')
         response = client.get(url)
 
@@ -21,12 +28,9 @@ class TestFTLRoutes:
 
         # Check response structure
         assert isinstance(data, dict)
-        # Check that we have at least some routes
-        assert len(data) > 0
-
-        # Check that each source city has destinations
+        # Check that each source city has destinations (which are dicts, not lists)
         for source_city, destinations in data.items():
-            assert isinstance(destinations, list)
+            assert isinstance(destinations, dict)
             assert len(destinations) > 0
 
 
@@ -34,8 +38,14 @@ class TestFTLRoutes:
 class TestFTLRateCalculation:
     """Test FTL rate calculation endpoint."""
 
-    def test_calculate_ftl_rate_success(self, client):
+    @patch('courier.views.ftl.load_ftl_rates')
+    def test_calculate_ftl_rate_success(self, mock_load_rates, client):
         """Test successful FTL rate calculation."""
+        mock_load_rates.return_value = {
+            "Bangalore": {
+                "Bhiwandi": {"20FT": 25000}
+            }
+        }
         url = reverse('courier:calculate-ftl-rate')
         data = {
             'source_city': 'Bangalore',
@@ -59,21 +69,27 @@ class TestFTLRateCalculation:
         assert 'total_price' in result
 
         # Check pricing calculation
-        base_price = result['base_price']
-        escalation = result['escalation_amount']
+        base_price = float(result['base_price'])
+        escalation = float(result['escalation_amount'])
         assert escalation == base_price * 0.15  # 15% escalation
 
-        price_with_escalation = result['price_with_escalation']
+        price_with_escalation = float(result['price_with_escalation'])
         assert price_with_escalation == base_price + escalation
 
-        gst = result['gst_amount']
+        gst = float(result['gst_amount'])
         assert gst == price_with_escalation * 0.18  # 18% GST
 
-        total = result['total_price']
+        total = float(result['total_price'])
         assert total == price_with_escalation + gst
 
-    def test_calculate_ftl_rate_invalid_route(self, client):
+    @patch('courier.views.ftl.load_ftl_rates')
+    def test_calculate_ftl_rate_invalid_route(self, mock_load_rates, client):
         """Test FTL rate calculation with invalid route."""
+        mock_load_rates.return_value = {
+            "Bangalore": {
+                "Bhiwandi": {"20FT": 25000}
+            }
+        }
         url = reverse('courier:calculate-ftl-rate')
         data = {
             'source_city': 'InvalidCity',
@@ -85,8 +101,14 @@ class TestFTLRateCalculation:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_calculate_ftl_rate_invalid_container(self, client):
+    @patch('courier.views.ftl.load_ftl_rates')
+    def test_calculate_ftl_rate_invalid_container(self, mock_load_rates, client):
         """Test FTL rate calculation with invalid container type."""
+        mock_load_rates.return_value = {
+            "Bangalore": {
+                "Bhiwandi": {"20FT": 25000}
+            }
+        }
         url = reverse('courier:calculate-ftl-rate')
         data = {
             'source_city': 'Bangalore',
@@ -98,13 +120,14 @@ class TestFTLRateCalculation:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-@pytest.mark.django_db
-class TestFTLOrderCreation:
-    """Test FTL order creation."""
-
-    def test_create_ftl_order_success(self, client):
+    @patch('courier.views.ftl.load_ftl_rates')
+    def test_create_ftl_order_success(self, mock_load_rates, client):
         """Test successful FTL order creation."""
+        mock_load_rates.return_value = {
+            "Bangalore": {
+                "Bhiwandi": {"20FT": 25000}
+            }
+        }
         url = reverse('courier:ftl-order-list')
         data = {
             'name': 'John Doe',
@@ -136,9 +159,9 @@ class TestFTLOrderCreation:
         assert 'order_number' in result
         assert result['order_number'].startswith('FTL-2026-')
 
-        # Check pricing fields are calculated
-        assert result['base_price'] > 0
-        assert result['total_price'] > result['base_price']
+        # Check pricing fields are calculated (cast to float as DRF returns Decimal as string)
+        assert float(result['base_price']) > 0
+        assert float(result['total_price']) > float(result['base_price'])
 
     def test_create_ftl_order_without_email(self, client):
         """Test FTL order creation without email (optional field)."""

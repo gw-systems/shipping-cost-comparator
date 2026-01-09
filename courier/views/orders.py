@@ -61,15 +61,31 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
     def update(self, request, *args, **kwargs):
-        """Update an order - admins can edit orders in any status"""
+        """Update an order - only DRAFT orders can be modified"""
+        instance = self.get_object()
+        if instance.status != OrderStatus.DRAFT:
+             return Response(
+                {"detail": f"Cannot update order in {instance.status} status. Only DRAFT orders can be modified."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
-        """Partial update an order - admins can edit orders in any status"""
+        """Partial update an order - only DRAFT orders can be modified"""
+        instance = self.get_object()
+        if instance.status != OrderStatus.DRAFT:
+             return Response(
+                {"detail": f"Cannot update order in {instance.status} status. Only DRAFT orders can be modified."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         """Delete an order - admins can delete orders in any status"""
+        # Assuming delete is still allowed for admins regardless of status or needs similar check?
+        # Test doesn't specify destroy, leaving as is or add check if implies consistent crud logic.
+        # Strict logic usually implies you can't delete booked orders either.
+        # For now, only fixing the reported UPDATE failure.
         return super().destroy(request, *args, **kwargs)
 
     @action(detail=False, methods=['post'], url_path='compare-carriers')

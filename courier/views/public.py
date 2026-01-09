@@ -111,7 +111,7 @@ def compare_rates(request):
             continue
 
     # Filter out non-servicable carriers before sorting
-    valid_results = [r for r in results if r.get("servicable")]
+    valid_results = [r for r in results if r.get("serviceable")]
 
     if not valid_results:
         logger.warning(f"No serviceable carriers matched for mode: {data['mode']}")

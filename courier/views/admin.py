@@ -53,40 +53,71 @@ def update_rates(request):
 @api_view(['POST'])
 @permission_classes([IsAdminToken])
 def add_carrier(request):
-    """Add a new carrier to the rate cards"""
+    """Add a new carrier to the database"""
+    # Import locally to avoid circular imports if any
+    from courier.models import Courier, CourierZoneRate
+    
     serializer = NewCarrierSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     carrier_data = serializer.validated_data
 
     try:
-        # Load existing rates
-        existing_rates = load_rates()
-
-        # Check for duplicate carrier name
-        carrier_names = [c.get("carrier_name", "").lower() for c in existing_rates]
-        if carrier_data['carrier_name'].lower() in carrier_names:
+        # Check for duplicate carrier name in DB
+        if Courier.objects.filter(name__iexact=carrier_data['carrier_name']).exists():
             logger.warning(f"ADMIN_ACTION: Duplicate carrier name attempted: {carrier_data['carrier_name']}")
             return Response(
                 {"detail": f"Carrier '{carrier_data['carrier_name']}' already exists."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Append new carrier
-        existing_rates.append(carrier_data)
+        # Create Courier using Manager helper
+        # Mapping serializer fields to Manager fields
+        # Serializer: carrier_name, mode, min_weight, forward_rates, additional_rates, cod_fixed, cod_percent
+        # Manager args: name, mode (as carrier_mode), min_weight, cod_charge_fixed, cod_charge_percent
+        
+        courier = Courier.objects.create(
+            name=carrier_data['carrier_name'],
+            carrier_mode=carrier_data['mode'],
+            min_weight=carrier_data['min_weight'],
+            cod_charge_fixed=carrier_data.get('cod_fixed', 0.0),
+            cod_charge_percent=carrier_data.get('cod_percent', 0.0),
+            # Defaults
+            carrier_type="Courier",
+            is_active=carrier_data.get('active', True)
+        )
+        
+        # Manually create rates
+        forward_rates = carrier_data.get('forward_rates', {})
+        additional_rates = carrier_data.get('additional_rates', {})
+        
+        # Iterate over zone codes (z_a, z_b...)
+        for zone_code, rate_val in forward_rates.items():
+            CourierZoneRate.objects.create(
+                courier=courier,
+                zone_code=zone_code,
+                rate_type='forward',
+                rate=rate_val
+            )
+            
+        for zone_code, rate_val in additional_rates.items():
+            CourierZoneRate.objects.create(
+                courier=courier,
+                zone_code=zone_code,
+                rate_type='additional',
+                rate=rate_val
+            )
 
-        # Backup and save
-        if os.path.exists(RATE_CARD_PATH):
-            shutil.copy(RATE_CARD_PATH, RATE_CARD_PATH + ".bak")
-
-        with open(RATE_CARD_PATH, "w") as f:
-            json.dump(existing_rates, f, indent=4)
-
-        logger.info(f"ADMIN_ACTION: New carrier added: {carrier_data['carrier_name']}")
-        invalidate_rates_cache()  # Clear cache after update
+        logger.info(f"ADMIN_ACTION: New carrier added to DB: {courier.name}")
+        invalidate_rates_cache()
+        
         return Response({
             "status": "success",
-            "message": f"Carrier '{carrier_data['carrier_name']}' added successfully",
-            "carrier": carrier_data
+            "message": f"Carrier '{courier.name}' added successfully",
+            "carrier": {
+                "id": courier.id,
+                "name": courier.name,
+                "mode": courier.carrier_mode
+            }
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:

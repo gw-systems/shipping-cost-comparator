@@ -29,7 +29,14 @@ def test_compare_rates_bluedart_integration():
     with patch('courier.views.public.load_rates', return_value=[mock_bluedart]):
         with patch('courier.engine.zones.get_location_details') as mock_loc:
             # Scenario 1: Source is Bhiwandi (421302) -> Should Service
-            mock_loc.side_effect = lambda pin: {"city": "Bhiwandi"} if pin == 421302 else {"city": "Delhi"}
+            # Mock must return complete location details with all required keys
+            def mock_location(pin):
+                if pin == 421302:
+                    return {"city": "bhiwandi", "state": "maharashtra", "district": "thane", "original_city": "bhiwandi", "original_state": "maharashtra"}
+                else:
+                    return {"city": "delhi", "state": "delhi", "district": "delhi", "original_city": "delhi", "original_state": "delhi"}
+            
+            mock_loc.side_effect = mock_location
             
             # Using standard engine logic, if we pass 421302, it should assume Bhiwandi
             # The engine relies on get_location_details OR hardcoded '4213' check.
@@ -53,12 +60,13 @@ def test_compare_rates_bluedart_integration():
                 mock_calc.return_value = {
                     "carrier": "Blue Dart",
                     "total_cost": 100,
-                    "servicable": True,
+                    "serviceable": True,
                     "zone": "A"
                 }
                 
                 res = client.post('/api/compare-rates', data=payload_success, format='json')
                 assert res.status_code == 200
+                assert res.json()[0]['serviceable'] == True
                 
                 # VERIFY: Did calculate_cost get called with source_pincode?
                 args, kwargs = mock_calc.call_args

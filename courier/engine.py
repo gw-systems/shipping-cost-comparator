@@ -204,7 +204,10 @@ class CostCalculator:
             
         self.freight_cost = cost
         self.breakdown["base_slab_rate"] = base_rate
+        self.breakdown["rate_per_kg"] = base_rate # Alias for consistency
         self.breakdown["additional_rate"] = extra_rate
+        self.breakdown["charged_weight"] = max(self.weight, slab)
+        self.breakdown["zone"] = self.zone_desc # Ensure zone is in breakdown
 
     def _calculate_csv_pricing(self, freight_min):
         """Helper for CSV/Region pricing (complex edl logic)"""
@@ -218,12 +221,15 @@ class CostCalculator:
         self.freight_cost = max(cost, freight_min)
         
         self.breakdown["base_rate_per_kg"] = base_rate
+        self.breakdown["base_rate_per_kg"] = base_rate
         self.breakdown["charged_weight"] = self.weight
+        self.breakdown["zone"] = self.zone_desc # Ensure zone is in breakdown
         
         # EDL Logic extracted
         edl_charge = self._calculate_edl(bd_details)
+        self.breakdown["edl_charge"] = edl_charge # Always present
         if edl_charge > 0:
-            self.breakdown["edl_charge"] = edl_charge
+             pass # Already added above
 
     def _calculate_edl(self, bd_details):
         """Extended Delivery Location Logic"""
@@ -320,8 +326,9 @@ class CostCalculator:
             "dod_charge": dod_charge,
             "risk_charge": risk_charge,
             "fov_charge": fov_charge,
+            "fov_charge": fov_charge,
             "ecc_charge": ecc_charge,
-            "cod_fee": cod_fee
+            "cod_charge": cod_fee
         }
 
     def _calc_fuel(self, base_amount):
@@ -412,7 +419,7 @@ class CostCalculator:
         cod_percent = var_fees.get("cod_percent", 0) or self.carrier_data.get("cod_percent", 0)
         
         if cod_percent > 1: cod_percent /= 100
-        return max(cod_fixed, self.order_value * cod_percent)
+        return cod_fixed + (self.order_value * cod_percent)
 
     def _finalize_totals(self, surcharges):
         """Step 4: Totals, Margins, Taxes"""
@@ -454,17 +461,18 @@ class CostCalculator:
         
         return {
             "carrier": self.carrier_data["carrier_name"],
+            "zone_id": self.zone_id,
             "zone": self.zone_desc,
             "total_cost": round(final_total, 2),
             "breakdown": full_breakdown,
-            "servicable": True
+            "serviceable": True
         }
 
     def _error_response(self):
         return {
             "carrier": self.carrier_data["carrier_name"],
             "error": self.error_msg,
-            "servicable": False
+            "serviceable": False
         }
 
 

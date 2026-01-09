@@ -54,14 +54,28 @@ class TestGetZone:
     """Tests for Unified get_zone logic"""
 
     def test_logic_city_specific_match(self):
-        # Mumbai (400001) -> Mumbai (Match) - Technically intra-city but simulating city match
-        # Need a pincode that maps to "test city" or use real data. 
-        # Using Mumbai 400001.
+        # Mumbai (400001) -> Mumbai (Match)
+        # We need to mock get_csv_region_details to return "Mumbai" and "Bhiwandi" (hub)
+        # Or just configure "Mumbai" as the hub for this test case.
         
-        # We need to make sure 400001 resolves to "mumbai" in get_location_details
-        zone_id, desc, logic = get_zone(400001, 400001, CARRIER_CITY)
-        assert logic == "city_specific"
-        assert zone_id == "mumbai"
+        from unittest.mock import patch
+        
+        # Override config for this test to set hub_city to mumbai
+        test_config = {
+            "routing_logic": {
+                "is_city_specific": True,
+                "hub_city": "mumbai",  # Set hub to match source/dest
+                "pincode_csv": "dummy.csv"
+            }
+        }
+        
+        with patch('courier.zones.get_csv_region_details') as mock_csv:
+            # Return dict with CITY=mumbai
+            mock_csv.return_value = {"CITY": "mumbai"}
+            
+            zone_id, desc, logic = get_zone(400001, 400001, test_config)
+            assert logic == "city_specific"
+            assert zone_id == "mumbai"
 
     def test_logic_matrix_match(self):
         # Mumbai (MH) -> Delhi (DL)
