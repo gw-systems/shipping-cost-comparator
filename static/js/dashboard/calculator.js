@@ -27,9 +27,34 @@ let calculatorBoxes = [
     { id: 1, weight: '', length: 10, width: 10, height: 10, orderValue: '' }
 ];
 
+// Global dimension unit (applies to all boxes)
+let globalDimensionUnit = 'cm';
+
 // Volumetric Divisor (Mirroring Backend)
 // TODO: Ideally fetch this from an API endpoint on load
 const VOLUMETRIC_DIVISOR = 5000;
+
+// ============================================================================
+// UNIT CONVERSION HELPERS
+// ============================================================================
+
+// Convert dimension from any unit to centimeters
+function convertToCm(value, unit) {
+    const conversions = {
+        'cm': 1,
+        'mm': 0.1,
+        'm': 100,
+        'in': 2.54,
+        'ft': 30.48
+    };
+    return value * (conversions[unit] || 1);
+}
+
+// Update global dimension unit for all boxes
+function updateGlobalDimensionUnit(unit) {
+    globalDimensionUnit = unit;
+    calculateBoxTotals(); // Recalculate with new unit
+}
 
 // ============================================================================
 // HELPER FUNCTIONS (Global Scope for HTML access)
@@ -87,7 +112,7 @@ function renderCalculatorBoxes() {
         ` : ''}
         
         <div>
-            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Weight (kg)</label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1 h-6 flex items-center">Weight (kg)</label>
             <input type="number" step="0.01" min="0.01" value="${box.weight}" 
                 id="calc-weight-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
@@ -97,7 +122,7 @@ function renderCalculatorBoxes() {
                 placeholder="0.00">
         </div>
         <div>
-            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">L (cm)</label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1 h-6 flex items-center">Length</label>
             <input type="number" step="0.1" min="0.1" value="${box.length}" 
                 id="calc-length-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
@@ -107,7 +132,7 @@ function renderCalculatorBoxes() {
                 placeholder="10">
         </div>
         <div>
-            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">W (cm)</label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1 h-6 flex items-center">Width</label>
             <input type="number" step="0.1" min="0.1" value="${box.width}" 
                 id="calc-width-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
@@ -117,7 +142,7 @@ function renderCalculatorBoxes() {
                 placeholder="10">
         </div>
         <div>
-            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">H (cm)</label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1 h-6 flex items-center">Height</label>
             <input type="number" step="0.1" min="0.1" value="${box.height}" 
                 id="calc-height-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
@@ -127,7 +152,7 @@ function renderCalculatorBoxes() {
                 placeholder="10">
         </div>
         <div>
-            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Value (₹) <span class="text-slate-300 font-normal">(optional)</span></label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1 h-6 flex items-center">Value (₹) <span class="text-slate-300 font-normal">(optional)</span></label>
             <input type="number" step="0.01" min="0" value="${box.orderValue}" 
                 id="calc-value-${box.id}"
                 class="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-brand-blue"
@@ -177,9 +202,10 @@ function calculateBoxTotals() {
 
     calculatorBoxes.forEach(box => {
         const w = parseFloat(box.weight) || 0;
-        const l = parseFloat(box.length) || 0;
-        const wid = parseFloat(box.width) || 0;
-        const h = parseFloat(box.height) || 0;
+        // Convert dimensions to cm before calculating using global unit
+        const l = convertToCm(parseFloat(box.length) || 0, globalDimensionUnit);
+        const wid = convertToCm(parseFloat(box.width) || 0, globalDimensionUnit);
+        const h = convertToCm(parseFloat(box.height) || 0, globalDimensionUnit);
         const val = parseFloat(box.orderValue) || 0;
 
         const vol = (l * wid * h) / VOLUMETRIC_DIVISOR;
@@ -362,13 +388,15 @@ async function calculateRegularRate(e) {
             is_cod: isCod,
             order_value: orderValue,
             mode: 'Both',
-            // Send orders list instead of single weight
-            orders: validBoxes.map(b => ({
-                weight: parseFloat(b.weight),
-                length: parseFloat(b.length),
-                width: parseFloat(b.width),
-                height: parseFloat(b.height)
-            }))
+            // Send orders list with dimensions converted to cm using global unit
+            orders: validBoxes.map(b => {
+                return {
+                    weight: parseFloat(b.weight),
+                    length: convertToCm(parseFloat(b.length), globalDimensionUnit),
+                    width: convertToCm(parseFloat(b.width), globalDimensionUnit),
+                    height: convertToCm(parseFloat(b.height), globalDimensionUnit)
+                };
+            })
         };
 
         const response = await fetch(`${API_BASE}/api/compare-rates`, {
@@ -405,25 +433,88 @@ function renderRegularRates(rates) {
         return;
     }
 
-    const html = rates.map(rate => `
-    <div class="bg-white border border-slate-200 rounded-lg p-4 hover:border-brand-blue transition-all flex items-center justify-between">
-        <div class="flex items-center space-x-4">
-            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
-                ${rate.carrier.charAt(0)}
+    const html = rates.map((rate, index) => {
+        const breakdown = rate.breakdown || {};
+        const breakdownId = `breakdown-${index}`;
+
+        // Helper to create breakdown row only if value exists and is non-zero
+        const createRow = (label, value) => {
+            if (!value || value === 0) return '';
+            return `
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-600">${label}:</span>
+                    <span class="font-semibold text-slate-800">₹${value.toFixed(2)}</span>
+                </div>`;
+        };
+
+        const formattedZone = (rate.zone || "").replace(/\b[a-z]/g, char => char.toUpperCase());
+
+        return `
+    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden hover:border-brand-blue transition-all">
+        <div class="p-4 flex items-center justify-between cursor-pointer" onclick="toggleBreakdown('${breakdownId}')">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
+                    ${rate.carrier.charAt(0)}
+                </div>
+                <div>
+                    <h4 class="font-semibold text-slate-800">${rate.carrier}</h4>
+                    <div class="text-xs text-slate-500">${rate.mode} • ${formattedZone}</div>
+                </div>
             </div>
-            <div>
-                <h4 class="font-semibold text-slate-800">${rate.carrier}</h4>
-                <div class="text-xs text-slate-500">${rate.mode} • Zone ${rate.zone}</div>
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <div class="font-bold text-lg text-brand-blue">₹${rate.total_cost.toFixed(2)}</div>
+                    <div class="text-xs text-slate-500">Click for breakdown</div>
+                </div>
+                <svg class="w-5 h-5 text-slate-400 transition-transform duration-200" id="${breakdownId}-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
             </div>
         </div>
-        <div class="text-right">
-            <div class="font-bold text-lg text-brand-blue">₹${rate.total_cost.toFixed(2)}</div>
-            <div class="text-xs text-slate-500">Base: ₹${rate.breakdown.base_transport_cost.toFixed(2)}</div>
+        
+        <!-- Breakdown Section (Hidden by default) -->
+        <div id="${breakdownId}" class="breakdown-content hidden border-t border-slate-200 bg-slate-50 px-4 py-3">
+            <div class="space-y-2 text-sm">
+                ${createRow('Base Freight', (breakdown.base_freight || 0) + (breakdown.profit_margin || 0))}
+                ${createRow('EDL Charge', breakdown.edl_charge)}
+                ${createRow('Docket Fee', breakdown.docket_fee)}
+                ${createRow('Eway Bill Fee', breakdown.eway_bill_fee)}
+                ${createRow('Fuel Surcharge', breakdown.fuel_surcharge)}
+                ${createRow('Hamali Charge', breakdown.hamali_charge)}
+                ${createRow('Pickup Charge', breakdown.pickup_charge)}
+                ${createRow('Delivery Charge', breakdown.delivery_charge)}
+                ${createRow('FOD Charge', breakdown.fod_charge)}
+                ${createRow('DOD Charge', breakdown.dod_charge)}
+                ${createRow('Risk Charge', breakdown.risk_charge)}
+                ${createRow('FOV Charge', breakdown.fov_charge)}
+                ${createRow('ECC Charge', breakdown.ecc_charge)}
+                ${createRow('COD Charge', breakdown.cod_charge)}
+                <div class="flex justify-between items-center pt-2 border-t border-slate-300">
+                    <span class="text-slate-600">GST (18%):</span>
+                    <span class="font-semibold text-slate-800">₹${(breakdown.gst_amount || 0).toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 border-t-2 border-brand-blue">
+                    <span class="font-bold text-slate-800">Total:</span>
+                    <span class="font-bold text-brand-blue text-lg">₹${rate.total_cost.toFixed(2)}</span>
+                </div>
+            </div>
         </div>
     </div>
-`).join('');
+`;
+    }).join('');
 
     container.innerHTML = html;
+}
+
+// Toggle breakdown visibility
+function toggleBreakdown(breakdownId) {
+    const breakdownEl = document.getElementById(breakdownId);
+    const iconEl = document.getElementById(`${breakdownId}-icon`);
+
+    if (breakdownEl && iconEl) {
+        breakdownEl.classList.toggle('hidden');
+        iconEl.classList.toggle('rotate-180');
+    }
 }
 
 // ============================================================================

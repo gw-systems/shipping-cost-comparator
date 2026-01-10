@@ -409,6 +409,19 @@
                                             <div class="flex justify-between items-center mb-3">
                                                 <h3 class="text-sm font-semibold text-slate-700">Shipment Details
                                                     (Boxes)</h3>
+                                                <div class="flex items-center gap-2">
+                                                    <label class="text-xs font-medium text-slate-600">Dimension
+                                                        Unit:</label>
+                                                    <select id="global-dimension-unit"
+                                                        onchange="updateGlobalDimensionUnit(this.value)"
+                                                        class="text-xs border border-brand-blue bg-blue-50 text-brand-blue rounded px-3 py-1 focus:ring-1 focus:ring-brand-blue font-semibold">
+                                                        <option value="cm">cm</option>
+                                                        <option value="mm">mm</option>
+                                                        <option value="m">m</option>
+                                                        <option value="in">in</option>
+                                                        <option value="ft">ft</option>
+                                                    </select>
+                                                </div>
                                             </div>
 
                                             <!-- Box List Container -->
