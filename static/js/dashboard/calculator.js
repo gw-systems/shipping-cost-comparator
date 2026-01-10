@@ -373,14 +373,20 @@ async function calculateRegularRate(e) {
     }
 
     const isCod = formData.get('is_cod') === 'true';
-    // Get total order value from state, NOT from form input which is now readonly/auto-calc
-    // But we sync'd it to DOM, so form data might have it, but safer to recalculate/use state
     const totals = calculateBoxTotals();
     const orderValue = totals.totalOrderValue;
 
+    const resultsList = document.getElementById('calc-regular-list');
+    const resultsContainer = document.getElementById('calc-regular-results');
+
     try {
-        showLoading('calc-regular-list', 'Fetching best rates...');
-        document.getElementById('calc-regular-results').classList.remove('hidden');
+        if (typeof showLoading === 'function') {
+            showLoading('calc-regular-list', 'Fetching best rates...');
+        } else {
+            resultsList.innerHTML = '<div class="text-center py-6 text-slate-500">Fetching best rates...</div>';
+        }
+
+        resultsContainer.classList.remove('hidden');
 
         const requestData = {
             source_pincode: parseInt(source),
@@ -410,17 +416,41 @@ async function calculateRegularRate(e) {
             renderRegularRates(rates);
         } else {
             const error = await response.json();
-            document.getElementById('calc-regular-list').innerHTML = `
-            <div class="text-center py-6 text-red-600 bg-red-50 rounded-lg">
-                ${error.detail || 'Failed to fetch rates'}
-            </div>
-        `;
+            let errorMsg = error.detail || 'Failed to fetch rates';
+
+            // Log specific error codes if available
+            console.warn(`Rate Calculation Failed: ${response.status}`, error);
+
+            // Show toast for user awareness
+            if (window.toast) toast.error(errorMsg);
+
+            // Show error in the list area
+            resultsList.innerHTML = `
+                <div class="text-center py-6 text-red-600 bg-red-50 rounded-lg border border-red-100 p-4">
+                    <p class="font-semibold mb-1">Calculation Failed</p>
+                    <p class="text-sm">${errorMsg}</p>
+                    <button onclick="document.getElementById('regular-calc-form').requestSubmit()" class="mt-3 px-4 py-1.5 bg-white border border-red-200 text-red-600 text-xs rounded hover:bg-red-50 transition-colors">
+                        Try Again
+                    </button>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Rate calc error:', error);
-        document.getElementById('calc-regular-list').innerHTML = `
-            <div class="text-center py-6 text-red-600 bg-red-50 rounded-lg">
-                Failed to connect to server
+
+        const isNetworkError = error.name === 'TypeError' && error.message === 'Failed to fetch';
+        const msg = isNetworkError ? "Network Error: Unable to connect to server" : "An unexpected error occurred";
+
+        if (window.toast) toast.error(msg);
+
+        resultsList.innerHTML = `
+            <div class="text-center py-6 text-red-600 bg-red-50 rounded-lg border border-red-100 p-4">
+                <p class="font-semibold mb-1">Connection Error</p>
+                <p class="text-sm">Unable to connect to the pricing engine.</p>
+                <p class="text-xs mt-1 text-slate-500">Please check your internet connection and try again.</p>
+                <button onclick="document.getElementById('regular-calc-form').requestSubmit()" class="mt-3 px-4 py-1.5 bg-white border border-red-200 text-red-600 text-xs rounded hover:bg-red-50 transition-colors">
+                    Retry Connection
+                </button>
             </div>
         `;
     }
@@ -580,8 +610,17 @@ async function calculateFTLRateSubmit(e) {
     const source = document.getElementById('calc-ftl-source').value;
     const dest = document.getElementById('calc-ftl-dest').value;
     const type = document.getElementById('calc-ftl-container').value;
+    const resultsContainer = document.getElementById('calc-ftl-results');
 
     try {
+        // Show loading state (manual since FTL has no specific list container)
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Calculating...';
+        submitBtn.disabled = true;
+
+        resultsContainer.classList.add('hidden');
+
         const response = await fetch(`${API_BASE}/api/ftl/calculate-rate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -594,7 +633,7 @@ async function calculateFTLRateSubmit(e) {
 
         if (response.ok) {
             const data = await response.json();
-            document.getElementById('calc-ftl-results').classList.remove('hidden');
+            resultsContainer.classList.remove('hidden');
 
             // User Request: Base Price = Base + Escalation
             document.getElementById('calc-ftl-base').textContent = '₹' + data.price_with_escalation.toFixed(2);
@@ -602,10 +641,21 @@ async function calculateFTLRateSubmit(e) {
             document.getElementById('calc-ftl-total').textContent = '₹' + data.total_price.toFixed(2);
         } else {
             const error = await response.json();
-            toast.error(error.detail || 'Calculation failed');
+            const errorMsg = error.detail || 'Calculation failed';
+
+            if (window.toast) toast.error(errorMsg);
+            console.warn(`FTL Calculation Failed: ${response.status}`, error);
         }
     } catch (err) {
         console.error(err);
-        toast.error('Failed to calculate FTL rate');
+        const isNetworkError = err.name === 'TypeError' && err.message === 'Failed to fetch';
+        const msg = isNetworkError ? "Network Error: Unable to connect" : "Failed to calculate FTL rate";
+
+        if (window.toast) toast.error(msg);
+    } finally {
+        // Reset button
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.textContent = 'Calculate FTL Rate';
+        submitBtn.disabled = false;
     }
 }

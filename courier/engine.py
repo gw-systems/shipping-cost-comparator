@@ -5,6 +5,7 @@ import logging
 from typing import Dict, Any, Optional
 from courier import zones  # The refactored zones module
 from courier.models import SystemConfig
+from courier.exceptions import InvalidWeightError, PincodeNotFoundError
 
 
 # Configure module logger
@@ -30,6 +31,9 @@ class CostCalculator:
             order_value (float, optional): Declared value of the shipment. Defaults to 0.
         """
         self.weight = float(weight)
+        if self.weight <= 0:
+            raise InvalidWeightError(self.weight)
+            
         self.source_pincode = source_pincode
         self.dest_pincode = dest_pincode
         self.carrier_data = carrier_data

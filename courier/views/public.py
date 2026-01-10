@@ -17,6 +17,7 @@ from django.conf import settings
 from courier.serializers import RateRequestSerializer
 from courier.engine import calculate_cost
 from courier.zones import get_zone_column, PINCODE_LOOKUP
+from courier.exceptions import InvalidWeightError, CourierError
 
 
 @api_view(['GET'])
@@ -106,6 +107,13 @@ def compare_rates(request):
             res["applied_zone"] = res.get("zone", "") # Use zone from engine result
             res["mode"] = carrier.get("mode", "Surface")
             results.append(res)
+        except InvalidWeightError as e:
+            # If weight is invalid, it's a bad request for ALL carriers
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except CourierError as e:
+            # Known courier error (e.g. pinned logic failure), log and skip
+            logger.warning(f"Carrier {carrier.get('carrier_name')} skipped: {e.message}")
+            continue
         except Exception as e:
             logger.error(f"CALCULATION_ERROR: Carrier {carrier.get('carrier_name')} failed. Error: {str(e)}")
             continue
